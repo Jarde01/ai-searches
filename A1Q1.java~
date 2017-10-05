@@ -19,12 +19,17 @@ public class A1Q1
     testPeople.add(12);
     testPeople.add(3);
     testPeople.add(8);
-
+    
+    ArrayList<Integer> testPeople2 = new ArrayList<Integer>();
+    testPeople2.add(5);
+    testPeople2.add(6);
+    testPeople2.add(1);
     
     int testSteps = 28;
+    beginSearches(testPeople, testSteps);
     
-    HeuristicSearch(testPeople, testSteps);
-    //beginSearches(testPeople, testSteps);
+    State testState = new State(testPeople);
+    State testState2 = new State(testPeople2);
     
     /*
      if (args.length > 1) //greater than one because we need atleast 2 arguments to create the problem
@@ -50,68 +55,28 @@ public class A1Q1
      */
   }
   
-  public static void testCompare()
-  {
-    ArrayList<Integer> testPeople = new ArrayList<Integer>();
-    testPeople.add(5);
-    testPeople.add(12);
-    testPeople.add(3);
-    testPeople.add(8);
-    
-    ArrayList<Integer> testPeople2 = new ArrayList<Integer>();
-    testPeople2.add(5);
-    testPeople2.add(6);
-    testPeople2.add(1);
-    
-    ArrayList<Integer> testPeople3 = new ArrayList<Integer>();
-    testPeople3.add(5);
-    testPeople3.add(12);
-    testPeople3.add(3);
-    testPeople3.add(8);
-    
-    int testSteps = 28;
-    //beginSearches(testPeople, testSteps);
-    
-    State testState = new State(testPeople);
-    State testState2 = new State(testPeople2);
-    State testState3 = new State(testPeople3);
-    
-    System.out.println("test 1: " +testState.compareState(testState2));   //false
-    System.out.println("test 2: " +testState2.compareState(testState2));  //true
-    System.out.println("test 3: " +testState.compareState(testState3));   //true
-    System.out.println("test 4: " +testState3.compareState(testState));   //true
-  
-  }
-  
   public static void beginSearches(ArrayList<Integer> people, int maxSteps)
   {
     boolean complete;
     int searches = 0;
     int failed = 0;
     
-    //complete = HeuristicSearch(people, maxSteps);
-    /*if (complete == false)
+    complete = HeuristicSearch(people, maxSteps);
+    if (complete == false)
     {
       failed++; 
-    }*/
+    }
   }
   
   
-  public static void HeuristicSearch(ArrayList<Integer> people, int maxSteps)
+  public static boolean HeuristicSearch(ArrayList<Integer> people, int maxSteps)
   {
     System.out.println("Starting Heuristic Search...");
     Stack solution = new Stack();
 
-    for (int i = 0; i < people.size()-1; i++)
-    {
-      for (int j = i+1; j< people.size(); j++)
-      {
-        System.out.println("I value: "+i+", "+j);
-      }
-    }
     ///generate state operatoins
     //apply operators
-    //return true;
+    return true;
   }  
 }
 
@@ -151,17 +116,14 @@ class State
     return same;
   }
   
-  public void generateOperations(int numPeople)
+  public void generateRightMoves()
   {
     
   }
   
-  public Node generateStateNodes(int... args)
+  public void generateLeftMoves()
   {
-    Node newState = null;
     
-    
-    return newState;
   }
   
   public boolean completeCheck()
