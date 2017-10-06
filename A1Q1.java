@@ -100,7 +100,7 @@ public class A1Q1
 class Move
 {
   public enum MoveType {LEFT, RIGHT}
-    
+  
   private int personOne;
   private int personTwo;
   private MoveType moveDirection;
@@ -116,8 +116,47 @@ class Move
   {
     this.personOne = pOne;
     this.personTwo = pTwo;
-    this.moveDirection = direction;
-      
+    this.moveDirection = direction; 
+  }
+  
+  public int getFirstPerson()
+  {
+    return personOne;
+  }
+  
+  public int getSecondPerson()
+  {
+    return personTwo;
+  }
+  
+  public MoveType getDirection()
+  {
+    return moveDirection;
+  }
+  
+  public String toString()
+  {
+    String direction;
+    
+    //finding out if moving to the right or left
+    if (moveDirection == Move.MoveType.RIGHT)
+    {
+      direction = "Right";
+    }
+    else
+    {
+      direction = "Left";
+    }
+    
+    //finding out if the move is for one or two people
+    if (personTwo >= 0)
+    {
+      return "Move people: "+personOne+" and "+personTwo+" "+direction;
+    }
+    else 
+    {
+      return "Move people: "+personOne+" "+direction;
+    }
   }
 }
 
@@ -135,6 +174,7 @@ class State extends Data
   private boolean light; //always move the light when moving people. false = on left, true = light on right side.
   private boolean complete;
   private Move lastMove;
+  private int elapsedTime;
   
   public State()
   {
@@ -143,6 +183,7 @@ class State extends Data
     light = false;
     complete = false;
     lastMove = null;
+    int elapsedTime = -1;
   }
   
   public State(ArrayList<Integer> startingPeople)
@@ -152,20 +193,13 @@ class State extends Data
     light = false;
     complete = false;
     lastMove = null;
-  }
-  
-  public State newState(State old, Move move)
-  {
-    State newState = new State();
-    newState = old.clone();
-    
-    return newState;
+    elapsedTime = -1;
   }
   
   public boolean compareState(State previous)
   {
     boolean same = false;
-    if (previous.left.size() == left.size() && light == previous.light && complete == previous.complete)
+    if (previous.left.size() == left.size() && light == previous.light && complete == previous.complete && elapsedTime == previous.elapsedTime)
     {
       same = true;
     }
@@ -182,9 +216,26 @@ class State extends Data
     return right;
   }
   
+  public ArrayList<Integer> getSide(Move.MoveType side)
+  {
+    if (side == Move.MoveType.RIGHT)
+    {
+      return getRight();
+    }
+    else 
+    {
+      return getLeft();
+    }
+  }
+  
   public boolean getLight()
   {
     return light;
+  }
+  
+  public int getTime()
+  {
+    return elapsedTime;
   }
   
   public State clone()
@@ -195,21 +246,81 @@ class State extends Data
     copyState.light = this.light;
     copyState.complete = this.complete;
     copyState.lastMove = this.lastMove;
+    copyState.elapsedTime = this.elapsedTime;
     return copyState;
   }
   
-  public ArrayList<Move> generateMoves()
+  public ArrayList<Move> generateMoves(Move.MoveType direction)
   {
-   ArrayList<Move> moveList = new ArrayList<Move>(); 
-   return moveList;
+    ArrayList<Move> moveList = new ArrayList<Move>(); 
+    
+    if (direction == Move.MoveType.RIGHT) //we want to move people to the right
+    {
+      for (int i = 0; i< left.size()-1; i++)
+      {
+        for ( int j = i+1; j < left.size(); j++)
+        {
+          Move newMove = new Move(i, j, direction);
+          moveList.add(newMove);
+        }    
+      }
+    }
+    
+    else //moving people to the left side (always one person)
+    {
+      for (int i = 0; i< left.size(); i++)
+      {
+        Move newMove = new Move(i, direction);
+        moveList.add(newMove);
+      }
+    }
+    
+    return moveList;
   }
   
-  public State movePeople(Move move, Move.MoveType direction)
+  public State movePeople(Move move)
   {
+    lastMove = move;
+    ArrayList<Integer> side;
+    ArrayList<Integer> otherside;
+    int firstPerson = move.getFirstPerson();
+    int secondPerson = move.getSecondPerson();
+    Move.MoveType direction = move.getDirection();
     
+    if (direction == Move.MoveType.RIGHT)
+    {
+      side = this.left;
+      otherside = this.right;
+    }
+    else
+    {
+      side = this.right;
+      otherside = this.left;
+    }
     
-    System.out.println("movePeople method");
-    return null;
+    otherside.add(side.get(firstPerson)); //this possible contains -1, when we are moving from right to left
+    if (secondPerson >= 0)
+    {
+      otherside.add(side.get(secondPerson));
+      
+      //find out which person is slower and add that time to the current states time
+      if ( side.get(firstPerson) > side.get(secondPerson))
+      {
+        this.elapsedTime+= side.get(firstPerson);
+      }
+      else 
+      {
+        this.elapsedTime+= side.get(secondPerson);
+      }
+      
+      side.remove(secondPerson); //always remove the second person first (so order isn't bad)
+    }
+    
+    //able to remove first person if second person is now removed or didn't exist
+    //because the move generator always makes the first person earlier in the list
+    side.remove(firstPerson);
+    
+    return this;
   }
   
   public boolean completeCheck()
@@ -281,48 +392,50 @@ class HeuristicSearch
   private ArrayList<Move> moveList;
   private boolean solved;
   
-  public HeuristicSearch(ArrayList<Integer> people, int maxSteps)
+  public HeuristicSearch(ArrayList<Integer> people, int maxTime)
   {
     stateList = new ArrayList<State>();
     moveList = new ArrayList<Move>();
     solved = false;
-    beginSearch(people, maxSteps);
-    
+    beginSearch(people, maxTime); 
   }
+  
 //heuristic search always chooses to move the fastest person with anyone else to the 
   //right, and the fastest person on the right back to the left
-  private static void beginSearch(ArrayList<Integer> people, int maxSteps)
+  private void beginSearch(ArrayList<Integer> people, int maxTime)
   {
-    int stepNumber = 0;
+    int currentTime = 0;
     State initialState = new State(people);   //create the initial starting state
-    Deque promisingStates = new LinkedList();             //fill this up with potential next states Nodes to visit
+    ArrayList<Move> potentialMoves;           //all of the moves possible from any state given
+    Move bestMove;                            //the move we will use to generate the next state
+    boolean complete = false;                 //flag telling while loop when solution is found
+    State currentState = initialState;        //keeping track of the current state in the while loop
+    State newState;
     
     System.out.println("Starting Heuristic Search...");
     
-    
-    
     initialState.printState();
-    State blankState = new State();
-    blankState.printState();
-    
-    State testCopy = initialState.clone();
-    testCopy.printState();
-    
-    
-    //ArrayList<Move> potentialMoves = generateMoves(Move.MoveType.RIGHT);
     
     //setting up while loop
-    boolean complete = false;
-    State currentState = initialState;
-    int round = 1;
-    while (stepNumber <= maxSteps && complete != true)
+    while (currentTime <= maxTime && complete != true)
     {
-      ArrayList<Integer> right = currentState.getRight();
-      ArrayList<Integer> left = currentState.getLeft();
+      //Create possible moves to the right
+      potentialMoves = currentState.generateMoves(Move.MoveType.RIGHT);
+      System.out.println("Possible moves: "+potentialMoves.toString());
       
-      System.out.println("Round: "+round+": Step Number: "+stepNumber+" maxSteps: " +maxSteps);
-      System.out.println(right.toString());
-      System.out.println(left.toString());
+      bestMove = heuristicFunction(currentState, potentialMoves);
+      
+      if (bestMove != null)
+      {
+        moveList.add(bestMove);  //adding the best move to the move solution list
+        
+        newState = currentState.clone();
+        newState.movePeople(bestMove);
+        currentTime = newState.getTime();
+        //do the move on the state, create a new state 
+        
+        currentState = newState;
+      }
       
 //create nodes for all of the possible moves
       
@@ -334,12 +447,59 @@ class HeuristicSearch
       //create new state and node and add to solution
       //complete = checkState(newState);
       /*if (complete == false)
-      {
-        //get best move left
-        //move person back left
-      }*/
-      round++;
-      stepNumber++;
+       {
+       //get best move left
+       //move person back left
+       }*/
     }
+  }
+  
+  private static Move heuristicFunction(State state, ArrayList<Move> move)
+  {
+    int currTime;  //want to minimize this value when moving right
+    int bestTime = 999;
+    Move bestMove = null;
+    ArrayList<Integer> currentSide;
+    Move currentMove;
+    Move.MoveType direction;
+    
+    for (int i = 0; i < move.size()-1; i++)
+    {
+      currTime = 0; //restart at 0 for each iteration
+      
+      currentMove = move.get(i);         //get the next possible move from the array list
+      direction = currentMove.getDirection();  //find out direction moving people from
+      
+      if (direction == Move.MoveType.RIGHT)
+      {
+        currentSide = state.getLeft();
+      }
+      else
+      {
+        currentSide = state.getRight();
+      }
+      
+      
+      if (currentSide.size() > 0) //must be true otherwise there is nobody to move
+      {
+        currTime += currentSide.get(currentMove.getFirstPerson());
+        if (currentSide.get(currentMove.getSecondPerson()) > 0)  //will be a valid position to choose when true
+        {
+          currTime += currentSide.get(currentMove.getSecondPerson());
+        }
+        
+        //checking if this is the most optimal time encountered so far
+        if (currTime < bestTime)  //remember the best move so we can return it and act on it (create the new state)
+        {
+          bestMove = currentMove;
+          bestTime = currTime;
+        }
+      }
+      
+      //Check if best move and current time are correct
+      System.out.println("Current time: "+currTime+"\nBest time: "+bestTime);
+    }
+    //System.out.println(bestMove.toString());
+    return bestMove;
   }
 }
