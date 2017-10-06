@@ -206,19 +206,6 @@ class State extends Data
     return right;
   }
   
-  /* THIS SHOULD BE GONE I believe
-  public ArrayList<Integer> getSide(Move.MoveType side)
-  {
-    if (side == Move.MoveType.RIGHT)
-    {
-      return getRight();
-    }
-    else 
-    {
-      return getLeft();
-    }
-  }*/
-  
   public boolean getLight()
   {
     return light;
@@ -621,7 +608,7 @@ class BreadthFirstSearch
   {
     solution = new Solution();
     beginBFSearch(people, maxTime); 
-    solution.printResults();
+    //solution.printResults();
   }
   
   private void beginBFSearch(ArrayList<Integer> people, int maxTime)
@@ -654,48 +641,21 @@ class BreadthFirstSearch
       queue.add(currentNode);
       prevNode = currentNode;
       
-      //setting up while loop
-      while (!queue.isEmpty() && currentTime <= maxTime && complete != true)
-      {
-        ////MOVING TO THE RIGHT
-        potentialMoves = currentState.generateMoves(Move.MoveType.RIGHT);
-        
-        int i = 0;
-        while (i< potentialMoves.size() && complete!= true)
-        {
-          newState = currentState.clone();            //clone current state
-          newState.movePeople(potentialMoves.get(i));  //move the people in the current state
-          newState.printState();
-          complete = newState.completeCheck();
-
-          newNode = new Node(newState); //create a new node 
-          newNode.visit();              //visit the node (checked if complete already)
-          queue.add(newNode );          //add new node to the queue
-          i++;
-        }
-        
-        /*************************************/
-        //MOVING TO THE RIGHT
-        potentialMoves = currentState.generateMoves(Move.MoveType.RIGHT);
-        
-        i = 0;
-        while (i< potentialMoves.size() && complete!= true)
-        {
-          newState = currentState.clone();            //clone current state
-          newState.movePeople(potentialMoves.get(i));  //move the people in the current state
-          newState.printState();
-          complete = newState.completeCheck();
-
-          newNode = new Node(newState); //create a new node 
-          newNode.visit();              //visit the node (checked if complete already)
-          queue.add(newNode );          //add new node to the queue
-          i++;
-        }
-      }
+      ////MOVING TO THE RIGHT
+      potentialMoves = currentState.generateMoves(Move.MoveType.RIGHT);
+      System.out.println(potentialMoves.toString());
       
-      if (currentState.getTime() < maxTime)
+      for (int i = 0; i< potentialMoves.size(); i++)
       {
-        solution.toggleSolved();  //mark the solution as solved
+        newState = currentState.clone();            //clone current state
+        newState.movePeople(potentialMoves.get(i)); //move the people in the current state
+        System.out.println(newState.toString());
+        complete = newState.completeCheck();
+
+        newNode = new Node(newState); //create a new node 
+        newNode.visit();              //visit the node (checked if complete already)
+        queue.add(newNode );          //add new node to the queue
+        i++;
       }
     }
   }

@@ -357,7 +357,7 @@ class Node
   private Data data;
   private boolean visited;
   
-  public Node(Node p, State d)
+  public Node(State d, Node p)
   {
     prev = p;
     data = d;
@@ -388,6 +388,11 @@ class Node
   public Data getData()
   {
     return data;
+  }
+  
+  public String toString()
+  {
+    return data.toString()+" \nVisited: "+visited;
   }
 }
 
@@ -608,7 +613,7 @@ class BreadthFirstSearch
   {
     solution = new Solution();
     beginBFSearch(people, maxTime); 
-    solution.printResults();
+    //solution.printResults();
   }
   
   private void beginBFSearch(ArrayList<Integer> people, int maxTime)
@@ -638,48 +643,57 @@ class BreadthFirstSearch
       //create a new node with initial state and add to the queue
       currentNode = new Node(initialState);
       currentNode.visit();
-      queue.add(currentNode);
       prevNode = currentNode;
       
-      //setting up while loop
+      ////MOVING TO THE RIGHT
+      potentialMoves = currentState.generateMoves(Move.MoveType.RIGHT);
+      System.out.println("Moves: "+potentialMoves.size()+" - "+potentialMoves.toString());
+      System.out.println("Current state: "+currentState.toString());
       
-      while (!queue.isEmpty() && currentTime <= maxTime && complete != true)
+      
+      //get the current state from the currentNode
+      currentState = (State) currentNode.getData();
+      int i = 0;
+      while (i< potentialMoves.size() && complete != true)
       {
-        ////MOVING TO THE RIGHT
-        potentialMoves = currentState.generateMoves(Move.MoveType.RIGHT);
-        System.out.println(potentialMoves.toString());
+        newState = currentState.clone();
+        newState.movePeople(potentialMoves.get(i));  //move people to get child
+        complete = newState.completeCheck();
         
-        int i = 0;
-        while (i< potentialMoves.size() && complete!= true)
-        {
-          newState = currentState.clone();            //clone current state
-          newState.movePeople(potentialMoves.get(i));  //move the people in the current state
-          System.out.println(newState.toString());
-          complete = newState.completeCheck();
-
-          newNode = new Node(newState); //create a new node 
-          newNode.visit();              //visit the node (checked if complete already)
-          queue.add(newNode );          //add new node to the queue
-          i++;
-        }
         
-
-        //MOVING TO THE LEFT
+        newNode = new Node(newState, prevNode);
+        newNode.visit();
+        queue.add(newNode);
+        i++;
+      }
+      
+      System.out.println("******************************\nPrinting out first while loop :"+queue.toString()+"\n**************************************");
+      
+      if ( complete != true)
+      {
+        currentNode = queue.remove();
+        currentState = (State) currentNode.getData();
+        
+        System.out.println("\n\n***second state: "+currentState.toString());
+        //get the possible moves from right to left
         potentialMoves = currentState.generateMoves(Move.MoveType.LEFT);
+        System.out.println("Moves: "+potentialMoves.size()+" - "+potentialMoves.toString());
+        System.out.println("Current state: "+currentState.toString());
         
-        i = 0;
-        while (i< potentialMoves.size() && complete!= true)
+        while (i< potentialMoves.size() && complete != true)
         {
-          newState = currentState.clone();            //clone current state
-          newState.movePeople(potentialMoves.get(i));  //move the people in the current state
-          System.out.println(newState.toString());
+          newState = currentState.clone();
+          newState.movePeople(potentialMoves.get(i));  //move people to get child
           complete = newState.completeCheck();
-
-          newNode = new Node(newState); //create a new node 
-          newNode.visit();              //visit the node (checked if complete already)
-          queue.add(newNode );          //add new node to the queue
+          
+          
+          newNode = new Node(newState, prevNode);
+          newNode.visit();
+          queue.add(newNode);
           i++;
         }
+        
+              System.out.println("******************************\nPrinting out second while loop :"+queue.toString()+"\n**************************************");
       }
     }
   }
