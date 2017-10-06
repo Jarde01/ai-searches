@@ -446,6 +446,33 @@ class Solution
     }
     return result;
   }
+  
+  public boolean isComplete()
+  {
+    return solved;
+  }
+  
+  public void toggleSolved()
+  {
+    solved = true;
+  }
+  
+  public void printResults()
+  {
+    String results = "";
+    
+    if (isComplete() == true)
+    {
+      results += "Search was successful!\nHere are your results:\n";
+    }
+    else 
+    {
+            results += "Search was unsuccessful in the alotted time... \nHere is the best solution:\n";
+    }
+
+    System.out.println(results + this.StatesToString());
+    System.out.println("\nHere is how we got here: (NOTE: Numbers are referencing positions)\n"+ this.MovesToString()); 
+  }
 }
 
 class HeuristicSearch
@@ -526,13 +553,10 @@ class HeuristicSearch
       }
     }
     
-    String results = "Search was successful!\nHere are your results:\n";
-    if (currentState.getTime() > maxTime)
+    if (currentState.getTime() < maxTime)
     {
-      results = "Search was unsuccessful in the alotted time... \nHere is the best solution:\n";
+      solution.toggleSolved();  //mark the solution as solved
     }
-    System.out.println(results+solution.StatesToString());
-    System.out.println("\nHere is how we got here: (NOTE: Numbers are referencing positions)\n"+solution.MovesToString());
   }
   
   private Move heuristicFunction(State state, ArrayList<Move> move)
@@ -582,5 +606,21 @@ class HeuristicSearch
     }
     //System.out.println(bestMove.toString());
     return bestMove;
+  }
+}
+
+class BreadthFirstSearch
+{
+  private Solution solution;
+  
+  public BreadthFirstSearch(ArrayList<Integer> people, int maxTime)
+  {
+    solution = new Solution();
+    beginSearch(people, maxTime); 
+  }
+  
+  public boolean beginSearch()
+  {
+    
   }
 }
