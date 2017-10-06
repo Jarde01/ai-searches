@@ -2,7 +2,7 @@ import java.util.PriorityQueue;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
-import java.util.PriorityQueue;
+import java.util.ArrayDeque;
 
 public class A1Q1
 {
@@ -37,15 +37,16 @@ public class A1Q1
      */
     
     ArrayList<Integer> testPeople = new ArrayList<Integer>();
-    testPeople.add(2);
-    testPeople.add(1);
+    testPeople.add(12);
+    testPeople.add(11);
     testPeople.add(3);
     testPeople.add(8);
     
     
     int testTime = 28;
     
-    HeuristicSearch heurSoln = new HeuristicSearch(testPeople, testTime);
+    //HeuristicSearch heurSoln = new HeuristicSearch(testPeople, testTime);
+    BreadthFirstSearch bfsSoln = new BreadthFirstSearch(testPeople, testTime);
     
   }
   
@@ -379,17 +380,20 @@ class Node
 {
   private Node prev;
   private Data data;
+  private boolean visited;
   
   public Node(Node p, State d)
   {
     prev = p;
     data = d;
+    visited = false;
   }
   
   public Node(State d)
   {
     data = d;
     prev = null;
+    visited = false;
   }
   
   public Node getPrev()
@@ -397,6 +401,14 @@ class Node
     return prev;
   }
   
+  public boolean visited()
+  {
+    return visited;
+  }
+  public void visit()
+  {
+    this.visited = true;
+  }
   
   public Data getData()
   {
@@ -406,9 +418,9 @@ class Node
 
 class Solution
 {
-  private ArrayList<State> stateList;  
-  private ArrayList<Move> moveList;
-  private boolean solved;
+  private ArrayList<State> stateList;  //list of states visited
+  private ArrayList<Move> moveList;    //list of moves taken to get to each state
+  private boolean solved;              //using seperate solved flag from the last state b/c this takes into account how long it took
   
   public Solution()
   {
@@ -483,6 +495,7 @@ class HeuristicSearch
   {
     solution = new Solution();
     beginSearch(people, maxTime); 
+    solution.printResults();
   }
   
 //heuristic search always chooses to move the fastest person with anyone else to the 
@@ -491,7 +504,7 @@ class HeuristicSearch
   {
     int currentTime = 0;
     State initialState = new State(people);   //create the initial starting state
-    ArrayList<Move> potentialMovesLeft;           //all of the moves possible from any state given
+    ArrayList<Move> potentialMoves;           //all of the moves possible from any state given
     ArrayList<Move> potentialMovesRight;
     Move bestMove;                            //the move we will use to generate the next state
     boolean complete = false;                 //flag telling while loop when solution is found
@@ -501,14 +514,16 @@ class HeuristicSearch
     System.out.println("Starting Heuristic Search...");
     solution.addState(initialState);
     
+    complete = initialState.completeCheck();   //check if the solution is already completed (impossible b/c people are always put onto left side at start)
+        
     //setting up while loop
     while (currentTime <= maxTime && complete != true)
     {
       //Create possible moves to the right
-      potentialMovesRight = currentState.generateMoves(Move.MoveType.RIGHT);
+      potentialMoves = currentState.generateMoves(Move.MoveType.RIGHT);
       //System.out.println("Possible moves RIGHT: "+potentialMovesRight.toString());
       
-      bestMove = heuristicFunction(currentState, potentialMovesRight);
+      bestMove = heuristicFunction(currentState, potentialMoves);
       
       if (bestMove != null)
       {
@@ -528,10 +543,10 @@ class HeuristicSearch
       //Moving people back onto the right if no solution yet!
       if ( complete != true)
       {
-        potentialMovesLeft = currentState.generateMoves(Move.MoveType.LEFT);
+        potentialMoves = currentState.generateMoves(Move.MoveType.LEFT);
         //System.out.println("Possible moves LEFT: "+potentialMovesLeft.toString());
         
-        bestMove = heuristicFunction(currentState, potentialMovesLeft);
+        bestMove = heuristicFunction(currentState, potentialMoves);
         
         if (bestMove != null)
         {
@@ -617,10 +632,97 @@ class BreadthFirstSearch
   {
     solution = new Solution();
     beginSearch(people, maxTime); 
+    solution.printResults();
   }
   
-  public boolean beginSearch()
+  private void beginSearch(ArrayList<Integer> people, int maxTime)
   {
+    int currentTime = 0;
+    State initialState = new State(people);   //create the initial starting state
+    ArrayList<Move> potentialMoves = new ArrayList<Move>();
+    ArrayDeque<Node> queue = new ArrayDeque<Node>();
+    Move bestMove;                            //the move we will use to generate the next state
+    boolean complete = false;                 //flag telling while loop when solution is found
+    State currentState = initialState;        //keeping track of the current state in the while loop
+    State newState;
+    Node currNode;
     
+    System.out.println("Starting Breadth First Search...");
+    solution.addState(initialState);
+    
+    complete = initialState.completeCheck();
+    
+    //create a new node with initial state and add to the queue
+    currNode = new Node(initialState);
+    currNode.visit();
+    queue.add(currNode);
+    
+    
+    //setting up while loop
+    while (!queue.isEmpty() && currentTime <= maxTime && complete != true)
+    {
+      //Create possible moves to the right
+      potentialMoves = currentState.generateMoves(Move.MoveType.RIGHT);
+      
+      queue = generateStates(currentState, potentialMoves); //Make the priority queue
+      
+      //fill the queue with all of the move nodes
+      
+      
+      //bestMove = heuristicFunction(currentState, potentialMovesRight);
+      bestMove = null;
+      if (bestMove != null)
+      {
+        solution.addMove(bestMove);  //adding the best move to the move solution list
+        
+        newState = currentState.clone();
+        newState.movePeople(bestMove);
+        currentTime = newState.getTime();
+        //do the move on the state, create a new state 
+        
+        currentState = newState;
+        solution.addState(currentState);     //must clone the state otherwise the final state is only one
+        complete = currentState.completeCheck();
+        //currentState.printState();
+      }
+      
+      //Moving people back onto the right if no solution yet!
+      if ( complete != true)
+      {
+        potentialMoves = currentState.generateMoves(Move.MoveType.LEFT);
+        //System.out.println("Possible moves LEFT: "+potentialMovesLeft.toString());
+        
+        //bestMove = heuristicFunction(currentState, potentialMovesLeft);
+        
+        if (bestMove != null)
+        {
+          solution.addMove(bestMove);  //adding the best move to the move solution list
+          
+          newState = currentState.clone();
+          newState.movePeople(bestMove);
+          currentTime = newState.getTime();
+          //do the move on the state, create a new state 
+          
+          //update currentState for next while loop
+          //add this new state to the state list
+          //check if the new state is complete
+          currentState = newState;
+          solution.addState(currentState);     //must clone the state otherwise the final state is only one
+          complete = currentState.completeCheck();
+          //currentState.printState();
+        }
+      }
+    }
+    
+    if (currentState.getTime() < maxTime)
+    {
+      solution.toggleSolved();  //mark the solution as solved
+    }
+  }
+  
+  private ArrayDeque<Node> generateStates(State state, ArrayList<Move> moveList)
+  {
+    ArrayDeque<Node> queue = new ArrayDeque<Node>();
+    return queue;
   }
 }
