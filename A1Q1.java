@@ -35,18 +35,18 @@ public class A1Q1
      System.out.println("No command line arguments, ending program...");
      }
      */
-
+    
     ArrayList<Integer> testPeople = new ArrayList<Integer>();
     testPeople.add(5);
     testPeople.add(12);
     testPeople.add(3);
     testPeople.add(8);
-
     
-    int testSteps = 28;
+    
+    int testSteps = 10;
     
     HeuristicSearch heurSoln = new HeuristicSearch(testPeople, testSteps);
-
+    
   }
   
   public static void testCompare()
@@ -79,7 +79,7 @@ public class A1Q1
     System.out.println("test 2: " +testState2.compareState(testState2));  //true
     System.out.println("test 3: " +testState.compareState(testState3));   //true
     System.out.println("test 4: " +testState3.compareState(testState));   //true
-  
+    
   }
   
   public static void beginSearches(ArrayList<Integer> people, int maxSteps)
@@ -90,80 +90,36 @@ public class A1Q1
     
     //complete = HeuristicSearch(people, maxSteps);
     /*if (complete == false)
-    {
-      failed++; 
-    }*/
-  }
-}
-class HeuristicSearch
-{
-  private Node solution;
-  
-  public HeuristicSearch(ArrayList<Integer> people, int maxSteps)
-  {
-    beginSearch(people, maxSteps);
-    
-  }
-//heuristic search always chooses to move the fastest person with anyone else to the 
-  //right, and the fastest person on the right back to the left
-  private static void beginSearch(ArrayList<Integer> people, int maxSteps)
-  {
-    int stepNumber = 0;
-    Node solution = null;
-    
-    System.out.println("Starting Heuristic Search...");
-    
-    Node initialState = new Node(new State(people));
-    
-    initialState.printState();
-    
-    for (int i = 0; i < people.size()-1; i++)
-    {
-      for (int j = i+1; j< people.size(); j++)
-      {
-        System.out.println("I value: "+i+", "+j);
-      }
-    }
-    
-    //setting up while loop
-    boolean complete = false;
-    Node currentState = initialState;
-    while (stepNumber < maxSteps || complete != true)
-    {
-      ArrayList<Integer> right = currentState.getData().getRight();
-      ArrayList<Integer> left = currentState.getData().getLeft();
-      
-      System.out.println(right.toString());
-      System.out.println(left.toString());
-      //getBest move for right (position of people to move)
-      
-      
-      //do best move for right
-      
-      //check if state is complete?
-      
-      //create new state and node and add to solution
-      complete = checkState(newState);
-      if (complete == false)
-      {
-        //get best move left
-        //move person back left
-      }
-      stepNumber++;
-    }
-    
-  }
-  
-  private static int[] bestMove(int peopleToMove)
-  {
-    int[] move = new int[2];
-    //for either the right or left side:
-    //go into that side and choose the lowest value
+     {
+     failed++; 
+     }*/
   }
 }
 
-//*******!*#&(*!&#$)#($)!(*#!)#(*)!#(*
-//TURN ME INTO A STACK OR QUEUE
+
+class Move
+{
+  public enum MoveType {LEFT, RIGHT}
+    
+  private int personOne;
+  private int personTwo;
+  private MoveType moveDirection;
+  
+  public Move(int pOne, MoveType direction)
+  {
+    personOne = pOne;
+    personTwo = -1;
+    moveDirection = direction;
+  }
+  
+  public Move(int pOne, int pTwo, MoveType direction)
+  {
+    this.personOne = pOne;
+    this.personTwo = pTwo;
+    this.moveDirection = direction;
+      
+  }
+}
 
 abstract class Data 
 {
@@ -173,11 +129,12 @@ abstract class Data
 }
 
 class State extends Data
-{
+{ 
   private ArrayList<Integer> left;
   private ArrayList<Integer> right;
   private boolean light; //always move the light when moving people. false = on left, true = light on right side.
   private boolean complete;
+  private Move lastMove;
   
   public State()
   {
@@ -185,6 +142,7 @@ class State extends Data
     right = new ArrayList<Integer>();
     light = false;
     complete = false;
+    lastMove = null;
   }
   
   public State(ArrayList<Integer> startingPeople)
@@ -193,6 +151,15 @@ class State extends Data
     right = new ArrayList<Integer>();
     light = false;
     complete = false;
+    lastMove = null;
+  }
+  
+  public State newState(State old, Move move)
+  {
+    State newState = new State();
+    newState = old.clone();
+    
+    return newState;
   }
   
   public boolean compareState(State previous)
@@ -215,17 +182,34 @@ class State extends Data
     return right;
   }
   
-  public void generateOperations(int numPeople)
+  public boolean getLight()
   {
-    
+    return light;
   }
   
-  public Node generateStateNodes(int... args)
+  public State clone()
   {
-    Node newState = null;
+    State copyState = new State();
+    copyState.left = this.left;
+    copyState.right = this.right;
+    copyState.light = this.light;
+    copyState.complete = this.complete;
+    copyState.lastMove = this.lastMove;
+    return copyState;
+  }
+  
+  public ArrayList<Move> generateMoves()
+  {
+   ArrayList<Move> moveList = new ArrayList<Move>(); 
+   return moveList;
+  }
+  
+  public State movePeople(Move move, Move.MoveType direction)
+  {
     
     
-    return newState;
+    System.out.println("movePeople method");
+    return null;
   }
   
   public boolean completeCheck()
@@ -249,10 +233,10 @@ class State extends Data
       lightLoc = "Right side";
     }
     
-    System.out.println("Left side: "+left.toString());
-    System.out.println("Right side: "+right.toString());
-    System.out.println("Light location: "+lightLoc);
-    System.out.println("Is complete? "+complete);
+    System.out.println("State:\n  ->Left side: "+left.toString());
+    System.out.println("  ->Right side: "+right.toString());
+    System.out.println("  ->Light location: "+lightLoc);
+    System.out.println("  ->Is complete? "+complete);
   }
 }
 
@@ -286,5 +270,76 @@ class Node
   public Data getData()
   {
     return data;
+  }
+}
+
+
+class HeuristicSearch
+{
+  
+  private ArrayList<State> stateList;  
+  private ArrayList<Move> moveList;
+  private boolean solved;
+  
+  public HeuristicSearch(ArrayList<Integer> people, int maxSteps)
+  {
+    stateList = new ArrayList<State>();
+    moveList = new ArrayList<Move>();
+    solved = false;
+    beginSearch(people, maxSteps);
+    
+  }
+//heuristic search always chooses to move the fastest person with anyone else to the 
+  //right, and the fastest person on the right back to the left
+  private static void beginSearch(ArrayList<Integer> people, int maxSteps)
+  {
+    int stepNumber = 0;
+    State initialState = new State(people);   //create the initial starting state
+    Deque promisingStates = new LinkedList();             //fill this up with potential next states Nodes to visit
+    
+    System.out.println("Starting Heuristic Search...");
+    
+    
+    
+    initialState.printState();
+    State blankState = new State();
+    blankState.printState();
+    
+    State testCopy = initialState.clone();
+    testCopy.printState();
+    
+    
+    //ArrayList<Move> potentialMoves = generateMoves(Move.MoveType.RIGHT);
+    
+    //setting up while loop
+    boolean complete = false;
+    State currentState = initialState;
+    int round = 1;
+    while (stepNumber <= maxSteps && complete != true)
+    {
+      ArrayList<Integer> right = currentState.getRight();
+      ArrayList<Integer> left = currentState.getLeft();
+      
+      System.out.println("Round: "+round+": Step Number: "+stepNumber+" maxSteps: " +maxSteps);
+      System.out.println(right.toString());
+      System.out.println(left.toString());
+      
+//create nodes for all of the possible moves
+      
+      
+      //do best move for right
+      
+      //check if state is complete?
+      
+      //create new state and node and add to solution
+      //complete = checkState(newState);
+      /*if (complete == false)
+      {
+        //get best move left
+        //move person back left
+      }*/
+      round++;
+      stepNumber++;
+    }
   }
 }
