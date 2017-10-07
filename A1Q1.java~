@@ -141,11 +141,11 @@ class Move
     //finding out if the move is for one or two people
     if (personTwo >= 0)
     {
-      return "Move people: "+personOne+" and "+personTwo+" "+direction;
+      return "\nMove people: "+personOne+" and "+personTwo+" "+direction;
     }
     else 
     {
-      return "Move people: "+personOne+" "+direction;
+      return "\nMove people: "+personOne+" "+direction;
     }
   }
 }
@@ -164,6 +164,7 @@ class State extends Data
   private boolean light; //always move the light when moving people. false = on left, true = light on right side.
   private boolean complete;
   private Move lastMove;
+  private State prevState;
   private int elapsedTime;
   
   public State()
@@ -173,6 +174,7 @@ class State extends Data
     light = false;
     complete = false;
     lastMove = null;
+    prevState = null;
     int elapsedTime = 0;
   }
   
@@ -183,7 +185,24 @@ class State extends Data
     light = false;
     complete = false;
     lastMove = null;
+    prevState = null;
     elapsedTime = 0;
+  }
+  
+  public State getPrevState()
+  {
+    return prevState;
+  }
+  
+  public Move getLastMove()
+  {
+    return lastMove;
+  }
+  
+  public void addPreviousInfo(State s, Move m)
+  {
+    this.prevState = s;
+    this.lastMove = m;
   }
   
   public boolean compareState(State previous)
@@ -237,17 +256,17 @@ class State extends Data
     return copyState;
   }
   
-  public ArrayList<Move> generateMoves(Move.MoveType direction)
+  public ArrayList<Move> generateMoves()
   {
     ArrayList<Move> moveList = new ArrayList<Move>(); 
     
-    if (direction == Move.MoveType.RIGHT) //we want to move people to the right
+    if (light == false) //we want to move people to the right
     {
       for (int i = 0; i< left.size()-1; i++)
       {
         for ( int j = i+1; j < left.size(); j++)
         {
-          Move newMove = new Move(i, j, direction);
+          Move newMove = new Move(i, j, Move.MoveType.RIGHT);
           moveList.add(newMove);
         }    
       }
@@ -258,7 +277,7 @@ class State extends Data
       int rightSize = right.size();
       for (int i = 0; i< right.size(); i++)
       {
-        Move newMove = new Move(i, direction);
+        Move newMove = new Move(i, Move.MoveType.LEFT);
         moveList.add(newMove);
       }
     }
@@ -269,49 +288,49 @@ class State extends Data
   public State movePeople(Move move)
   {
     lastMove = move;
-    ArrayList<Integer> side;
-    ArrayList<Integer> otherside;
+    ArrayList<Integer> fromSide;
+    ArrayList<Integer> toSide;
     int firstPerson = move.getFirstPerson();
     int secondPerson = move.getSecondPerson();
     Move.MoveType direction = move.getDirection();
     
     if (direction == Move.MoveType.RIGHT)
     {
-      side = this.left;
-      otherside = this.right;
+      fromSide = this.left;
+      toSide = this.right;
     }
     else
     {
-      side = this.right;
-      otherside = this.left;
+      toSide = this.left;
+      fromSide = this.right;
     }
     
-    otherside.add(side.get(firstPerson)); //this possible contains -1, when we are moving from right to left
+    toSide.add(fromSide.get(firstPerson)); //this possible contains -1, when we are moving from right to left
     if (secondPerson >= 0)
     {
-      otherside.add(side.get(secondPerson));
+      toSide.add(fromSide.get(secondPerson));
       
       //find out which person is slower and add that time to the current states time
-      if ( side.get(firstPerson) > side.get(secondPerson))
+      if ( fromSide.get(firstPerson) > fromSide.get(secondPerson))
       {
-        this.elapsedTime+= side.get(firstPerson);
+        this.elapsedTime+= fromSide.get(firstPerson);
       }
       else 
       {
-        this.elapsedTime+= side.get(secondPerson);
+        this.elapsedTime+= fromSide.get(secondPerson);
       }
       
-      side.remove(secondPerson); //always remove the second person first (so order isn't bad)
+      fromSide.remove(secondPerson); //always remove the second person first (so order isn't bad)
     }
     
     else //just add the single persons time to elapsedTime
     {
-      this.elapsedTime+=side.get(firstPerson);
+      this.elapsedTime+= fromSide.get(firstPerson);
     }
     
     //able to remove first person if second person is now removed or didn't exist
     //because the move generator always makes the first person earlier in the list
-    side.remove(firstPerson);
+    fromSide.remove(firstPerson);
     
     //Flipping the light to the opposite side
     if (this.light == false)
@@ -353,18 +372,18 @@ class State extends Data
 
 class Node
 {
-  private Node prev;
   private Data data;
+  private Node prev;
   private boolean visited;
   
-  public Node(Node p, State d)
+  public Node(Data d, Node p)
   {
     prev = p;
     data = d;
     visited = false;
   }
   
-  public Node(State d)
+  public Node(Data d)
   {
     data = d;
     prev = null;
@@ -385,9 +404,20 @@ class Node
     this.visited = true;
   }
   
+  public Node clone()
+  {
+    Node newNode = new Node( ((State)this.data).clone() , this.prev);
+    return newNode;
+  }
+  
   public Data getData()
   {
     return data;
+  }
+  
+  public String toString()
+  {
+    return data.toString()+" \nVisited: "+visited;
   }
 }
 
@@ -496,7 +526,7 @@ class HeuristicSearch
     while (currentTime <= maxTime && complete != true)
     {
       //Create possible moves to the right
-      potentialMoves = currentState.generateMoves(Move.MoveType.RIGHT);
+      potentialMoves = currentState.generateMoves();
       //System.out.println("Possible moves RIGHT: "+potentialMovesRight.toString());
       
       bestMove = heuristicFunction(currentState, potentialMoves);
@@ -519,7 +549,7 @@ class HeuristicSearch
       //Moving people back onto the right if no solution yet!
       if ( complete != true)
       {
-        potentialMoves = currentState.generateMoves(Move.MoveType.LEFT);
+        potentialMoves = currentState.generateMoves();
         //System.out.println("Possible moves LEFT: "+potentialMovesLeft.toString());
         
         bestMove = heuristicFunction(currentState, potentialMoves);
@@ -614,55 +644,66 @@ class BreadthFirstSearch
   private void beginBFSearch(ArrayList<Integer> people, int maxTime)
   {
     int currentTime = 0;
-    State newState, currentState;
-    Node newNode, currentNode, prevNode;
+    State newState, currentState, prevState, copyState, childState;
     Move bestMove;                            //the move we will use to generate the next state
     boolean complete = false;                 //flag telling while loop when solution is found
     ArrayList<Move> potentialMoves;
-    ArrayDeque<Node> queue;
+    ArrayDeque<State> queue;
+    Move prevMove;
     
     State initialState = new State(people);   //create the initial starting state
     potentialMoves = new ArrayList<Move>();   //list of operators to use on a state
-    queue = new ArrayDeque<Node>();           //queue containing all nodes 
+    queue = new ArrayDeque<State>();           //queue containing all nodes 
     currentState = initialState;              //keeping track of the current state in the while loop
     
     
     System.out.println("Starting Breadth First Search...");
-    solution.addState(initialState);
     
-    complete = initialState.completeCheck();
+    complete = currentState.completeCheck();
+    queue.add(currentState);
     
-    if ( complete != true)
+    System.out.println("initial state: "+currentState.toString());
+    
+    while (queue.isEmpty() != true && complete != true)
     {
+      currentState = queue.remove();
+      childState = currentState.clone();
       
-      //create a new node with initial state and add to the queue
-      currentNode = new Node(initialState);
-      currentNode.visit();
-      queue.add(currentNode);
-      prevNode = currentNode;
+      int i = 0;
+      potentialMoves = currentState.generateMoves();
+      System.out.println("Move list: "+potentialMoves.toString());
       
-      ////MOVING TO THE RIGHT
-      potentialMoves = currentState.generateMoves(Move.MoveType.RIGHT);
-      System.out.println(potentialMoves.toString());
       
-      for (int i = 0; i< potentialMoves.size(); i++)
+      while ( childState != null && complete != true && i < potentialMoves.size())
       {
-        newState = currentState.clone();            //clone current state
-        newState.movePeople(potentialMoves.get(i)); //move the people in the current state
-        System.out.println(newState.toString());
-        complete = newState.completeCheck();
-
-        newNode = new Node(newState); //create a new node 
-        newNode.visit();              //visit the node (checked if complete already)
-        queue.add(newNode );          //add new node to the queue
+        System.out.println("WHILE");
+        
+        childState = currentState.clone();
+        childState.movePeople(potentialMoves.get(i));
+        childState.addPreviousInfo(currentState, potentialMoves.get(i));
+        queue.add(childState);
+        complete = childState.completeCheck();
+        
+        if (complete == true)
+        {
+          System.out.println(childState.toString());
+          /*
+          while ( (currentState = childState.getPrevState() ) != null)
+          {
+            System.out.println(currentState.toString());
+            System.out.println("nestedWhile");
+            solution.addState(currentState);
+            solution.addMove(currentState.getLastMove());
+          }*/
+        }
         i++;
       }
     }
   }
-  
-  private ArrayDeque<Node> generateStates(State state, ArrayList<Move> moveList)
-  {
-    ArrayDeque<Node> queue = new ArrayDeque<Node>();
-    return queue;
+    
+    private ArrayDeque<Node> generateStates(State state, ArrayList<Move> moveList)
+    {
+      ArrayDeque<Node> queue = new ArrayDeque<Node>();
+      return queue;
+    }
   }
-}
