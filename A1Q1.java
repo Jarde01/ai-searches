@@ -664,7 +664,10 @@ class BreadthFirstSearch
     
     System.out.println("initial state: "+currentState.toString());
     
-    while (queue.isEmpty() != true && complete != true)
+    //KEEP TRack of all of the states visited here, then the last just add to the end and replace the current end (in parent) if child isn't solution
+    Node head = null;
+    head = new Node(currentState, null);
+    while (queue.isEmpty() != true)
     {
       currentState = queue.remove();
       childState = currentState.clone();
@@ -680,9 +683,11 @@ class BreadthFirstSearch
         
         childState = currentState.clone();
         childState.movePeople(potentialMoves.get(i));
-        childState.addPreviousInfo(currentState, potentialMoves.get(i));
+        System.out.println(childState.toString());
+        //childState.addPreviousInfo(currentState, potentialMoves.get(i));
         queue.add(childState);
         complete = childState.completeCheck();
+        System.out.println(childState.toString());
         
         if (complete == true)
         {
@@ -695,8 +700,9 @@ class BreadthFirstSearch
             solution.addState(currentState);
             solution.addMove(currentState.getLastMove());
           }*/
+          System.out.println("\n\n\nCompleted solution size: "+queue.size()+" "+queue.toString());
         }
-        i++;
+        i++; //get the next move in the potentialMoveList
       }
     }
   }
