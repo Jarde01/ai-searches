@@ -397,7 +397,7 @@ class Node
     visited = false;
   }
 
-  public Node(Data d, ArrayList<children> c, boolean v) //basically only for clone method
+  public Node(Data d, ArrayList<Node> c, boolean v) //basically only for clone method
   {
     data = d;
     children = c;
@@ -450,7 +450,7 @@ class Node
   public Node clone()
   {
     Node copyNode;
-    State copyState = (State).getData().clone();  //clone the current nodes state
+    State copyState = ((State)data).clone();  //clone the current nodes state
     
     ArrayList<Node> copyChildren = new ArrayList<Node>();
 
@@ -465,6 +465,8 @@ class Node
     }
 
     copyNode = new Node(copyState, copyChildren, this.visited); //creates new node with copy of this.state and this.children
+  
+    return copyNode;
   }
   
   public Data getData()
