@@ -9,11 +9,12 @@ public class A1Q1
   
   public static void main(String[] args) 
   {
-    int maxTime = 0;
-    int numPeople = 0;
-    ArrayList<Integer> people = new ArrayList<Integer>();
-    
     /*
+     * 
+     int maxTime = 0;
+     int numPeople = 0;
+     ArrayList<Integer> people = new ArrayList<Integer>();
+     
      if (args.length > 1) //greater than one because we need atleast 2 arguments to create the problem
      {
      System.out.println(args[0]);
@@ -141,11 +142,11 @@ class Move
     //finding out if the move is for one or two people
     if (personTwo >= 0)
     {
-      return "\nMove people: "+personOne+" and "+personTwo+" "+direction;
+      return "Move people "+personOne+" and "+personTwo+" "+direction;
     }
     else 
     {
-      return "\nMove people: "+personOne+" "+direction;
+      return "Move "+personOne+" "+direction;
     }
   }
 }
@@ -156,7 +157,6 @@ abstract class Data
   abstract ArrayList<Integer> getLeft();
 }
 
-
 class State extends Data
 { 
   private ArrayList<Integer> left;
@@ -164,18 +164,16 @@ class State extends Data
   private boolean light; //always move the light when moving people. false = on left, true = light on right side.
   private boolean complete;
   private Move lastMove;
-  private State prevState;
   private int elapsedTime;
   
-  public State()
+  public State()   //used to create clones
   {
     left = new ArrayList<Integer>();
     right = new ArrayList<Integer>();
     light = false;
     complete = false;
     lastMove = null;
-    prevState = null;
-    int elapsedTime = 0;
+    elapsedTime = 0;
   }
   
   public State(ArrayList<Integer> startingPeople)
@@ -185,13 +183,7 @@ class State extends Data
     light = false;
     complete = false;
     lastMove = null;
-    prevState = null;
     elapsedTime = 0;
-  }
-  
-  public State getPrevState()
-  {
-    return prevState;
   }
   
   public Move getLastMove()
@@ -199,10 +191,9 @@ class State extends Data
     return lastMove;
   }
   
-  public void addPreviousInfo(State s, Move m)
+  public void setLastMove(Move lm)
   {
-    this.prevState = s;
-    this.lastMove = m;
+    lastMove = lm;
   }
   
   public boolean compareState(State previous)
@@ -233,6 +224,11 @@ class State extends Data
   public int getTime()
   {
     return elapsedTime;
+  }
+
+  public void print()
+  {
+    System.out.println(this.toString());
   }
   
   //Proper clone method for arraylists and this class as a whole
@@ -274,8 +270,8 @@ class State extends Data
     
     else //moving people to the left side (always one person)
     {
-      int rightSize = right.size();
-      for (int i = 0; i< right.size(); i++)
+      int rightSize = right.size();       //Need to use this in for loop because right.size changes
+      for (int i = 0; i< rightSize; i++)
       {
         Move newMove = new Move(i, Move.MoveType.LEFT);
         moveList.add(newMove);
@@ -356,7 +352,7 @@ class State extends Data
   
   public String toString()
   {
-    String lightLoc;
+    String lightLoc, lastMoveString;
     if (light == false)
     {
       lightLoc = "Left side";
@@ -366,48 +362,111 @@ class State extends Data
       lightLoc = "Right side";
     }
     
-    return "\nState:\n  ->Left side: "+left.toString()+"\n  ->Right side: "+right.toString()+"\n  ->Light location: "+lightLoc+"\n  ->Elapsed time: "+elapsedTime+"\n  ->Is complete? "+complete;
+    if (lastMove != null)
+    {
+      lastMoveString = lastMove.toString();
+    }
+    else
+    {
+      lastMoveString = "No last move recorded";
+    }
+
+    return "\nState:\n  ->Left side: "+left.toString()+"\n  ->Right side: "+right.toString()+"\n  ->Light location: "+lightLoc+"\n  ->Elapsed time: "+elapsedTime+"\n  ->Last Move: "+lastMoveString+"\n  ->Is complete? "+complete;
+    
   }
 }
 
 class Node
 {
   private Data data;
-  private Node prev;
+  private ArrayList<Node> children;
   private boolean visited;
   
-  public Node(Data d, Node p)
+  public Node(Data d, Node n)
   {
-    prev = p;
     data = d;
+    children = new ArrayList<Node>();
+    children.add(n);                  //adding new child
     visited = false;
   }
-  
+
   public Node(Data d)
   {
     data = d;
-    prev = null;
+    children = new ArrayList<Node>();
     visited = false;
   }
-  
-  public Node getPrev()
+
+  public Node(Data d, ArrayList<Node> c, boolean v) //basically only for clone method
   {
-    return prev;
+    data = d;
+    children = c;
+    visited = v;
+  }
+
+  public Node getUnvisitedChildren(Node parent)
+  {
+    Node unvisitedChild = null;
+    Node child;
+    int i = 0;
+    if (children.size() > 0)
+    {
+      while (i < children.size() && unvisitedChild == null)
+      {
+        child = children.get(i);
+        if (unvisitedChild.visited() == false)
+          {
+            unvisitedChild = child;
+          }
+        i++;
+      } 
+    }
+    return unvisitedChild;
   }
   
   public boolean visited()
   {
     return visited;
   }
+  
+  public boolean check()
+  {
+    boolean result = false;
+    
+    visited = true;
+    if (  ((State)data).completeCheck() == true)
+    {
+      result = true;
+    }
+    return result;
+  }
+  
   public void visit()
   {
     this.visited = true;
   }
   
+  
   public Node clone()
   {
-    Node newNode = new Node( ((State)this.data).clone() , this.prev);
-    return newNode;
+    Node copyNode;
+    State copyState = ((State)data).clone();  //clone the current nodes state
+    
+    ArrayList<Node> copyChildren = new ArrayList<Node>();
+
+    for (int i = 0; i< this.children.size(); i++)
+    {
+      copyChildren.add(this.children.get(i));
+    }
+    
+    for (int j = 0; j< this.children.size(); j++)
+    {
+      copyChildren.add(this.children.get(j));
+    }
+
+    copyNode = new Node(copyState, copyChildren, this.visited); //creates new node with copy of this.state and this.children
+  
+    return copyNode;
   }
   
   public Data getData()
@@ -509,7 +568,6 @@ class HeuristicSearch
   {
     int currentTime = 0;
     ArrayList<Move> potentialMoves;           //all of the moves possible from any state given
-    ArrayList<Move> potentialMovesRight;
     State newState;
     Move bestMove;                            //the move we will use to generate the next state
     boolean complete = false;                 //flag telling while loop when solution is found
@@ -644,72 +702,17 @@ class BreadthFirstSearch
   private void beginBFSearch(ArrayList<Integer> people, int maxTime)
   {
     int currentTime = 0;
-    State newState, currentState, prevState, copyState, childState;
-    Move bestMove;                            //the move we will use to generate the next state
-    boolean complete = false;                 //flag telling while loop when solution is found
+    boolean complete = false;           //flag telling while loop when solution is found
     ArrayList<Move> potentialMoves;
-    ArrayDeque<State> queue;
-    Move prevMove;
+    ArrayDeque<Node> queue;            //needed for BFS
     
     State initialState = new State(people);   //create the initial starting state
     potentialMoves = new ArrayList<Move>();   //list of operators to use on a state
-    queue = new ArrayDeque<State>();           //queue containing all nodes 
-    currentState = initialState;              //keeping track of the current state in the while loop
-    
+    queue = new ArrayDeque<Node>();           //queue containing all nodes 
+    Node root;
     
     System.out.println("Starting Breadth First Search...");
-    
-    complete = currentState.completeCheck();
-    queue.add(currentState);
-    
-    System.out.println("initial state: "+currentState.toString());
-    
-    //KEEP TRack of all of the states visited here, then the last just add to the end and replace the current end (in parent) if child isn't solution
-    Node head = null;
-    head = new Node(currentState, null);
-    while (queue.isEmpty() != true)
-    {
-      currentState = queue.remove();
-      childState = currentState.clone();
-      
-      int i = 0;
-      potentialMoves = currentState.generateMoves();
-      System.out.println("Move list: "+potentialMoves.toString());
-      
-      
-      while ( childState != null && complete != true && i < potentialMoves.size())
-      {
-        System.out.println("WHILE");
-        
-        childState = currentState.clone();
-        childState.movePeople(potentialMoves.get(i));
-        System.out.println(childState.toString());
-        //childState.addPreviousInfo(currentState, potentialMoves.get(i));
-        queue.add(childState);
-        complete = childState.completeCheck();
-        System.out.println(childState.toString());
-        
-        if (complete == true)
-        {
-          System.out.println(childState.toString());
-          /*
-          while ( (currentState = childState.getPrevState() ) != null)
-          {
-            System.out.println(currentState.toString());
-            System.out.println("nestedWhile");
-            solution.addState(currentState);
-            solution.addMove(currentState.getLastMove());
-          }*/
-          System.out.println("\n\n\nCompleted solution size: "+queue.size()+" "+queue.toString());
-        }
-        i++; //get the next move in the potentialMoveList
-      }
-    }
+
+    //
   }
-    
-    private ArrayDeque<Node> generateStates(State state, ArrayList<Move> moveList)
-    {
-      ArrayDeque<Node> queue = new ArrayDeque<Node>();
-      return queue;
-    }
-  }
+}
