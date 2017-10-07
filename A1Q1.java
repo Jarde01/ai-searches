@@ -379,6 +379,7 @@ class State extends Data
 class Node
 {
   private Data data;
+  private Node parent;
   private ArrayList<Node> children;
   private boolean visited;
   
@@ -393,18 +394,56 @@ class Node
   public Node(Data d)
   {
     data = d;
+    parent = null;
     children = new ArrayList<Node>();
     visited = false;
   }
 
-  public Node(Data d, ArrayList<Node> c, boolean v) //basically only for clone method
+  public boolean completeCheck()
+  {
+    return ( (State)data).completeCheck();
+
+  }
+
+  public Node(Data d, ArrayList<Node> c, boolean v, Node p) //basically only for clone method
   {
     data = d;
     children = c;
     visited = v;
+    parent = p;
   }
 
-  public Node getUnvisitedChildren(Node parent)
+  public void setParent(Node parent)
+  {
+    this.parent = parent;
+  }
+
+  public void printChildren()
+  {
+    System.out.println(children.toString());
+  }
+
+  public void addChild(Node child)
+  {
+    children.add(child);
+  }
+
+  public void movePeople(Move move)
+  {
+    ((State)data).movePeople(move);
+  }
+
+  public ArrayList<Move> generateMoves()
+  {
+    return ((State)data).generateMoves();
+  }
+
+  public void print()
+  {
+    System.out.println(this.toString());
+  }
+
+  public Node getUnvisitedChildren()
   {
     Node unvisitedChild = null;
     Node child;
@@ -464,7 +503,7 @@ class Node
       copyChildren.add(this.children.get(j));
     }
 
-    copyNode = new Node(copyState, copyChildren, this.visited); //creates new node with copy of this.state and this.children
+    copyNode = new Node(copyState, copyChildren, false, this.parent); //creates new node with copy of this.state and this.children
   
     return copyNode;
   }
@@ -713,6 +752,41 @@ class BreadthFirstSearch
     
     System.out.println("Starting Breadth First Search...");
 
+    root = new Node( new State(people) );
+    queue.add(root);
+    System.out.println(queue.toString());    
+    root.visit();
+    System.out.println(queue.toString());
+
+    /*
+    while ( queue.size() != 0)
+    {
+      Node parent = queue.remove();
+      Node child = null;
+*/
+      //TESTING HERE:
+      Node parent = queue.remove();
+      potentialMoves = parent.generateMoves();
+      //create the new child nodes and add to parent here:
+      for ( int i = 0; i< potentialMoves.size(); i++)
+      {
+        Node child = parent.clone();    
+        child.movePeople(potentialMoves.get(i));
+        child.setParent(parent);
+        parent.addChild(child);
+      }
+      
+      parent.printChildren();
+      
+      /*
+      while ( (child=newNode.getUnvisitedChildren()) != null && complete != true )
+      {
+        complete = child.completeCheck();
+        child.print();
+        queue.add(child);
+      }
+    }*/
+    
     //
   }
 }
