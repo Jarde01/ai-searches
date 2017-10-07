@@ -49,6 +49,7 @@ public class A1Q1
     //HeuristicSearch heurSoln = new HeuristicSearch(testPeople, testTime);
     BreadthFirstSearch bfsSoln = new BreadthFirstSearch(testPeople, testTime);
     
+    
   }
   
   public static void testCompare()
@@ -195,13 +196,50 @@ class State extends Data
   {
     lastMove = lm;
   }
+
+  public int getRightSize()
+  {
+    return right.size();
+  }
+
+  public int getLeftSize()
+  {
+    return left.size();
+  }
   
   public boolean compareState(State previous)
   {
     boolean same = false;
-    if (previous.left.size() == left.size() && light == previous.light && complete == previous.complete && elapsedTime == previous.elapsedTime)
+    boolean arrays = true;
+
+    if (previous != null)
     {
-      same = true;
+      if ( left.size() == previous.getLeftSize() )
+      {
+        for (int i = 0; i< left.size(); i++)
+        {
+          if (this.left.get(i) != previous.left.get(i))
+          {
+            arrays = false;
+          }
+        }
+      }
+
+      if ( right.size() == previous.getRightSize() )
+      {
+        for ( int j = 0; j < right.size(); j++)
+        {
+          if (this.right.get(j) != previous.right.get(j))
+          {
+            arrays = false;
+          }
+        }
+      }
+
+      if (arrays == true && light == previous.light && complete == previous.complete && elapsedTime == previous.elapsedTime)
+      {
+        same = true;
+      }
     }
     return same;
   }
@@ -445,22 +483,27 @@ class Node
 
   public Node getUnvisitedChildren()
   {
-    Node unvisitedChild = null;
-    Node child;
-    int i = 0;
+    Node child, unvisitedChild = null;
+
     if (children.size() > 0)
+    for (int i = 0; i< children.size(); i++)
     {
-      while (i < children.size() && unvisitedChild == null)
+      child = children.get(i);
+      if (child.visited != true)
       {
-        child = children.get(i);
-        if (unvisitedChild.visited() == false)
-          {
-            unvisitedChild = child;
-          }
-        i++;
-      } 
+        return child;
+      }
     }
+
     return unvisitedChild;
+  }
+
+  public boolean compareNode(Node other)
+  {
+    boolean same = ( (State)data).compareState((State)other.getData());
+    //System.out.println("compareNode results: "+same);
+    return same;
+
   }
   
   public boolean visited()
@@ -756,36 +799,39 @@ class BreadthFirstSearch
     queue.add(root);
     System.out.println(queue.toString());    
     root.visit();
-    System.out.println(queue.toString());
 
-    /*
     while ( queue.size() != 0)
     {
-      Node parent = queue.remove();
       Node child = null;
-*/
-      //TESTING HERE:
       Node parent = queue.remove();
+      //TESTING HERE:
       potentialMoves = parent.generateMoves();
       //create the new child nodes and add to parent here:
       for ( int i = 0; i< potentialMoves.size(); i++)
       {
-        Node child = parent.clone();    
+        child = parent.clone();    
         child.movePeople(potentialMoves.get(i));
         child.setParent(parent);
         parent.addChild(child);
       }
       
-      parent.printChildren();
+      //parent.printChildren();
+      child = parent.getUnvisitedChildren();
       
-      /*
-      while ( (child=newNode.getUnvisitedChildren()) != null && complete != true )
+      //System.out.println("Child:");
+      //child.print();
+      int iteration = 0;
+      while ( child != null && complete != true  && child.compareNode(parent) != true && iteration < 10)
       {
         complete = child.completeCheck();
-        child.print();
+        //child.print();
         queue.add(child);
+        //System.out.println("Queue in nested while "+queue.toString());
+        //create the new child
+        child = parent.getUnvisitedChildren(); //update while loop condition
+        iteration++;
       }
-    }*/
+    }
     
     //
   }
