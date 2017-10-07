@@ -379,26 +379,49 @@ class State extends Data
 class Node
 {
   private Data data;
-  private Node next;
+  private ArrayList<Node> children;
   private boolean visited;
   
   public Node(Data d, Node n)
   {
     data = d;
-    next = n;
+    children = new ArrayList<Node>();
+    children.add(n);                  //adding new child
     visited = false;
   }
-  
+
   public Node(Data d)
   {
     data = d;
-    next = null;
+    children = new ArrayList<Node>();
     visited = false;
   }
-  
-  public Node getPrev()
+
+  public Node(Data d, ArrayList<children> c, boolean v) //basically only for clone method
   {
-    return next;
+    data = d;
+    children = c;
+    visited = v;
+  }
+
+  public Node getUnvisitedChildren(Node parent)
+  {
+    Node unvisitedChild = null;
+    Node child;
+    int i = 0;
+    if (children.size() > 0)
+    {
+      while (i < children.size() && unvisitedChild == null)
+      {
+        child = children.get(i);
+        if (unvisitedChild.visited() == false)
+          {
+            unvisitedChild = child;
+          }
+        i++;
+      } 
+    }
+    return unvisitedChild;
   }
   
   public boolean visited()
@@ -423,11 +446,25 @@ class Node
     this.visited = true;
   }
   
+  
   public Node clone()
   {
-    Node newNode = new Node( ((State)this.data).clone() , this.next);
-    newNode.visited = this.visited;
-    return newNode;
+    Node copyNode;
+    State copyState = (State).getData().clone();  //clone the current nodes state
+    
+    ArrayList<Node> copyChildren = new ArrayList<Node>();
+
+    for (int i = 0; i< this.children.size(); i++)
+    {
+      copyChildren.add(this.children.get(i));
+    }
+    
+    for (int j = 0; j< this.children.size(); j++)
+    {
+      copyChildren.add(this.children.get(j));
+    }
+
+    copyNode = new Node(copyState, copyChildren, this.visited); //creates new node with copy of this.state and this.children
   }
   
   public Data getData()
@@ -665,30 +702,15 @@ class BreadthFirstSearch
     int currentTime = 0;
     boolean complete = false;           //flag telling while loop when solution is found
     ArrayList<Move> potentialMoves;
-    ArrayDeque<State> queue;            //needed for BFS
+    ArrayDeque<Node> queue;            //needed for BFS
     
     State initialState = new State(people);   //create the initial starting state
     potentialMoves = new ArrayList<Move>();   //list of operators to use on a state
-    queue = new ArrayDeque<State>();           //queue containing all nodes 
-    
+    queue = new ArrayDeque<Node>();           //queue containing all nodes 
+    Node root;
     
     System.out.println("Starting Breadth First Search...");
-    
-    complete = initialState.completeCheck();
-    queue.add(initialState);
-    potentialMoves = initialState.generateMoves();
-    
-    System.out.println("initial state: "+initialState.toString());
-    System.out.println("potential moves for initial state: "+potentialMoves.toString());
-    
-    
-    State s1 = initialState.clone();
-    s1.movePeople(potentialMoves.get(0));
-    System.out.println(s1.toString());
 
-    potentialMoves = s1.generateMoves();
-    System.out.println("s1 potenialMoves! Moving left only hopefully"+potentialMoves.toString());
-    s1.movePeople(potentialMoves.get(0));
-    s1.print();
+    //
   }
 }
