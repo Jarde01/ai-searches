@@ -3,21 +3,8 @@ import java.util.*;
 
 public class A1Q2
 {
-  /*
-   enum Direction {
-   UP(0), DOWN(2), RIGHT(1), LEFT(3);
-   
-   public Direction(int value)
-   {
-   this.value = value;
-   }
-   
-   private int value;
-   public int value()
-   {
-   return value;
-   }
-   }*/
+  private static int actualMoves = 0;
+    private static int totalMovesConsidered = 0;
   
   public static void main(String[] args) 
   {
@@ -65,24 +52,11 @@ public class A1Q2
       
       Maze maze = new Maze(inputMaze);
       Maze result = AStarHelper(maze);
-      System.out.println("\n\n****SOLUTION:");
+      System.out.println("------- Solution: -------");
       result.print();
-      //testCompareMaze(maze);
-      /*
-       * ArrayList<Maze> closed = new ArrayList<Maze>();
-       * 
-       for (int i = 0; i< 10; i++)
-       {
-       maze.moveHero(1);
-       //maze.print();
-       closed.add(maze); //adding the new move to the list of mazes already done
-       }
-       
-       ArrayList<Maze> children = testChildrenGeneration(maze);
-       
-       
-       //ArrayList<Maze> solnPath = AStarHelper(maze);
-       */
+      int cost = result.getCost();
+      System.out.println("Total moves in solution: "+actualMoves+"\nTotal moves considered: "+cost);
+
     }
     
     catch (IOException e) 
@@ -101,6 +75,25 @@ public class A1Q2
     }
     maze.print();
     maze2.print();
+  }
+  
+  public static void testCheckList(Maze maze)
+  {
+    ArrayList<Maze> children = maze.generateChildren();
+    boolean testB = checkLists(children, maze);
+    System.out.println("testCheckList result: "+testB);
+    
+    for (int i = 0; i< 10; i++)
+    {
+      maze.moveHero(1);
+    }
+    
+    children = maze.generateChildren();
+    System.out.println("Children in test: "+children);
+    System.out.println(children.get(0).toString());
+    System.out.println(children.get(0).toString());
+    testB = checkLists(children, maze);
+    System.out.println("testCheckList result: "+testB);
   }
   
   public static void testMove(Maze maze)
@@ -148,35 +141,30 @@ public class A1Q2
     System.out.println("d3-d3: "+d3.euclideanDistance(d3));
   }
   
+  
   public static Maze AStarHelper(Maze maze)
   {
     //calculate distance to each of the flags from heroLoc
     //perform AStar search from hero to closest flag
     //if null delete that flag (unreachable)
-    Maze solution = maze;
-
+    
     while (maze.flagsLeft() != 0)   //Keep using the A star algorithm while there are flags to find
     {
       int closestFlagPos = maze.getClosestFlagLoc();
       Loc closestFlag = maze.getFlag(closestFlagPos);
-      System.out.println("Closest flag to hero: "+closestFlagPos+" Actual loc: "+closestFlag);
-      
+      System.out.println("------- AStarHelper --------\nClosest flag to hero: "+closestFlagPos+" Actual loc: "+closestFlag);
+      System.out.println("Maze BEFORE: "+maze);
       maze = AStar(maze, closestFlag);    //do the search and return a maze thats the same when failed or a new maze state
-
-
+      System.out.println("Maze AFTER: "+maze);
       maze.deleteFlag(closestFlagPos);    //delete the closest flag
-
-
     }
-  
-    
-    
-    return solution;
+    return maze;
   }
   
   
   public static Maze AStar(Maze startState, Loc goal)
   {
+    System.out.println("-------------- AStar beginning: --------------");
     //Comparator<Loc> comparator = new FlagDistanceComparator();
     ArrayList<Maze> open = new ArrayList<Maze>();
     ArrayList<Maze> closed = new ArrayList<Maze>();
@@ -184,34 +172,89 @@ public class A1Q2
     ArrayList<Maze> children;
     Maze current, solution = startState;
     int currentLoc;
-
+    boolean inOpen = false, inClosed = false; 
+    Maze child;
+    
+    //add starting state to the "prioQ"
     open.add(startState);
-
+    int moves = 0;
+    
     while (open.size() != 0)
     {
-      currentLoc = findLowestCost(open, goal);
+      currentLoc = findLowestCost(open, goal);  //get the best/lowest cost in open list
       current = open.get(currentLoc);   //get the lowest costing state (priority queue hack)
-
+      open.remove(currentLoc); //remove (deque) from open
+      
+      //actualMoves++; //counts the actual moves that are required to get to the goal (running total)
       if (current.getHeroLoc().compare(goal) == true)
       {
+        //System.out.println("Total moves: "+moves);
         return current;
       }
       
       //generate child states, check if not in closed or open
       children = current.generateChildren();
+      
+      totalMovesConsidered+=children.size();
+
       for (int i = 0; i< children.size(); i++)
       {
-        System.out.println("\n\n\n**********************CHILDREN:");
-        children.get(i).print();
+        //System.out.println("\n\n\n**********************CHILDREN:");
+        //children.get(i).print();
+        child = children.get(i);  //set child to one of children in the list
+
+        inOpen = checkLists(open, current);  //check if current is in the open list
+        //System.out.println("\n\n\n\n\nOPEN: "+open.toString()+"    \nCurrent:"+current+"\n\n\n\n");
+        inClosed = checkLists(closed, current);
+        //System.out.println("Comparisons: Open - "+inOpen+"   Closed - "+inClosed);
+        if (inOpen != true && inClosed != true) //when true, means a new state needs to be created
+        {
+          //System.out.println("Child is supposed to go in open!");
+          //child.print();
+          child.updateHeuristicCost(goal); //need to set the heuristic cost of the child          
+          open.add(child);
+        }
+        else if (inOpen == true)
+        {
+          //this needs to update cost only if lower!
+          child.updateHeuristicCost(goal);
+        }
+        else 
+        {
+          //do nothing?
+          
+        }
+        inOpen = false; //resetting boolean flags
+        inClosed = false;
       }
 
+      //adding the current to closed and deleting it from 
       closed.add(current);
-      open.remove(currentLoc);
+      
     }
     //this should return something
     return solution;
   }
 
+  public static boolean checkLists(ArrayList<Maze> list, Maze current)
+  {
+    boolean result = false;
+
+    for (int i= 0; i< list.size(); i++)
+    {
+      //can just compare the cost and hero location to get uniqueness?
+      int listCost = list.get(i).getCost();
+      int currentCost = current.getCost();
+      boolean sameLoc = list.get(i).getHeroLoc().compare(current.getHeroLoc());
+      //System.out.println("List: "+listCost+"  Current cost: "+currentCost+"\nSameloc? "+sameLoc);
+      
+      if ( listCost == currentCost && sameLoc == true )
+      {
+        result = true;
+      }
+    }
+    return result;
+  }
 
   //Adds the heuristic value to the current cost to reach that state to determine cost
   public static int findLowestCost(ArrayList<Maze> list, Loc goal)
@@ -221,7 +264,7 @@ public class A1Q2
     double bestLowest = 9999;
     int bestLocation = 0;
 
-    System.out.println("List size: "+list.size());
+    //System.out.println("findLowestCost list size: "+list.size());
     for (int i = 0; i< list.size(); i++)
     {
       currLowest = list.get(i).getCost() + list.get(i).heuristicValue(goal); //goal being the flag location
@@ -299,6 +342,7 @@ class Maze // implements Comparator<Integer>
   private int width;
   private Loc heroLoc;
   private int cost;
+  private double heuristicCost;
   private ArrayList<Loc> flags;
   
   public enum Tile
@@ -323,6 +367,7 @@ class Maze // implements Comparator<Integer>
     width = maze[0].length;
     heroLoc = null;
     cost = 0;
+    heuristicCost = 0;  //cost + euclidean distance from flag
     flags = new ArrayList<Loc>();
     children = new ArrayList<Maze>();
     
@@ -342,8 +387,11 @@ class Maze // implements Comparator<Integer>
     mazeClone = new Maze(arrayClone);
     cloneHeroLoc = this.heroLoc.clone();
     mazeClone.setHeroLoc(cloneHeroLoc);
+    mazeClone.setCost(this.cost);
     return mazeClone;
   }
+
+  public void setCost(int cost) {this.cost = cost;}
 
   public Loc getFlag(int position)
   {
@@ -409,7 +457,7 @@ class Maze // implements Comparator<Integer>
       valid = false; //resetting valid as false
       Maze child = this.clone();
       valid = child.moveHero(i);
-      System.out.println("Valid? "+valid+", child: "+child.toString());
+      //System.out.println("Valid? "+valid+", child: "+child.toString());
       
       if (valid == true)
       {
@@ -450,10 +498,10 @@ class Maze // implements Comparator<Integer>
   }
   
   //Calculates the cost from the hero location to the location of a flag in the maze
-  public double getCost(Loc flag)
+  public void updateHeuristicCost(Loc flag)
   {
-    double cost = 0;
-    return cost;
+    //update heuristic cost
+    this. heuristicCost = cost + this.heroLoc.euclideanDistance(flag);
   }
   
   public boolean moveHero(int direction)
@@ -464,17 +512,31 @@ class Maze // implements Comparator<Integer>
     if (direction == 0) { //up direction
       if ( (maze[heroLoc.getY()-1][heroLoc.getX()] ) != Tile.WALL.getValue() )
       {
+        if ( maze[heroLoc.getY()][heroLoc.getX()] == Tile.FLAG.getValue())
+        {
+          maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +3; //only add two when encountering the flag for the first time
+        }
+        else 
+        {
         //System.out.println("Moving up");
         maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
+        }
         heroLoc.setY(heroLoc.getY()-1);
         valid = true;
       }
     }
     else if (direction == 1) { //right direction
-      if ( (maze[heroLoc.getY()][heroLoc.getX()+1] )!= Tile.WALL.getValue() )
+      if ( (maze[heroLoc.getY()][heroLoc.getX()+1] ) != Tile.WALL.getValue() )
       {
         //System.out.println("Moving right");
+        if ( maze[heroLoc.getY()][heroLoc.getX()] == Tile.FLAG.getValue())
+        {
+          maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +3; //only add two when encountering the flag for the first time
+        }
+        else 
+        {
         maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
+        }
         heroLoc.setX(heroLoc.getX()+1);
         valid = true;
       }
@@ -482,8 +544,14 @@ class Maze // implements Comparator<Integer>
     else if (direction == 2) { //down direction
       if ( (maze[heroLoc.getY()+1][heroLoc.getX()] ) != Tile.WALL.getValue() )
       {
-        //System.out.println("Moving down");
+        if ( maze[heroLoc.getY()][heroLoc.getX()] == Tile.FLAG.getValue())
+        {
+          maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +3; //only add two when encountering the flag for the first time
+        }
+        else
+        {
         maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
+        }
         heroLoc.setY(heroLoc.getY()+1);
         valid = true;
       }
@@ -491,8 +559,15 @@ class Maze // implements Comparator<Integer>
     else if (direction == 3) { //left direction
       if ( (maze[heroLoc.getY()][heroLoc.getX()-1] ) != Tile.WALL.getValue() )
       {
+        if ( maze[heroLoc.getY()][heroLoc.getX()] == Tile.FLAG.getValue())
+        {
+          maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +3; //only add two when encountering the flag for the first time
+        }
+        else
+        {
         //System.out.println("Moving left");
         maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
+        }
         heroLoc.setX(heroLoc.getX()-1);
         valid = true;
       }
@@ -519,11 +594,12 @@ class Maze // implements Comparator<Integer>
         {
           newItem = new Loc(x, y);
           flags.add(newItem);
+          //maze[y][x] = Tile.OPEN.value; //changes the flag tile back to 0 since its been added to the flag arraylist
         }
         else if (maze[y][x] == Tile.HERO.value)
         {
           heroLoc = new Loc(x, y);
-          maze[y][x] = Tile.OPEN.value; //modify the tile back to 0, and then just print out the hero in print method instead
+          maze[y][x] = Tile.OPEN.value; //wherever the hero is standing will count as being travelled on already
         }
       }
     }
@@ -532,9 +608,9 @@ class Maze // implements Comparator<Integer>
   
   public String toString()
   {
-    String result = "\n";
+    String result = "\n---------- Maze: ----------\n";
     char wall = '#';
-    char hero = 'h';
+    char hero = '@';
     char flag = '!';
     char print;
     for (int y = 0; y< height; y++)
@@ -553,62 +629,32 @@ class Maze // implements Comparator<Integer>
         /*else if (y == heroLoc.getY() && x == heroLoc.getX() )
          {
          print = hero;
-         } */
+         }*/
         else
         {
           result+= ( (char) (maze[y][x]+'0') );
         }
       }
       result+="\n"; //start a new line
-    }  
+    }
+    result +="---------- Stats: ----------";
+    //Print out the locations of important items on the map
+    if (heroLoc != null)
+    {
+      result += "\nHero at: "+heroLoc.toString();
+    }
+    if ( flags != null)
+    {
+      result +="\nFlags at: "+flags.toString();
+    }
+    result += "\nCurrent cost: "+cost;
     return result;
   }
   
   
   public void print()
   {
-    char wall = '#';
-    char hero = 'h';
-    char flag = '!';
-    char print;
-    for (int y = 0; y< height; y++)
-    {
-      for(int x = 0; x< width; x++)
-      {
-        
-        if (maze[y][x] == -1)
-        {
-          print = wall;
-        }
-        else if (maze[y][x] == -2)
-        {
-          print = flag;
-        }
-        /*else if (y == heroLoc.getY() && x == heroLoc.getX() )
-         {
-         print = hero;
-         } */
-        else
-        {
-          print = (char) (maze[y][x]+'0');
-        }
-        
-        System.out.print(print);
-        
-      }
-      System.out.println();
-    }
-    
-    //Print out the locations of important items on the map
-    if (heroLoc != null)
-    {
-      System.out.println("Hero at: "+heroLoc.toString());
-    }
-    if ( flags != null)
-    {
-      System.out.println("Flags at: "+flags.toString());
-    }
-    System.out.println("Current cost: "+cost);
+    System.out.println(this.toString());
   }
 }
 
