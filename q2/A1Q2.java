@@ -3,9 +3,6 @@ import java.util.*;
 
 public class A1Q2
 {
-  private static int actualMoves = 0;
-    private static int totalMovesConsidered = 0;
-  
   public static void main(String[] args) 
   {
     try
@@ -55,8 +52,8 @@ public class A1Q2
       System.out.println("------- Solution: -------");
       result.print();
       int cost = result.getCost();
-      System.out.println("Total moves in solution: "+actualMoves+"\nTotal moves considered: "+cost);
-
+      System.out.println("Total moves in solution: "+result.countMoves()+"\nTotal moves considered: "+cost);
+      
     }
     
     catch (IOException e) 
@@ -196,13 +193,13 @@ public class A1Q2
       children = current.generateChildren();
       
       totalMovesConsidered+=children.size();
-
+      
       for (int i = 0; i< children.size(); i++)
       {
         //System.out.println("\n\n\n**********************CHILDREN:");
         //children.get(i).print();
         child = children.get(i);  //set child to one of children in the list
-
+        
         inOpen = checkLists(open, current);  //check if current is in the open list
         //System.out.println("\n\n\n\n\nOPEN: "+open.toString()+"    \nCurrent:"+current+"\n\n\n\n");
         inClosed = checkLists(closed, current);
@@ -227,7 +224,7 @@ public class A1Q2
         inOpen = false; //resetting boolean flags
         inClosed = false;
       }
-
+      
       //adding the current to closed and deleting it from 
       closed.add(current);
       
@@ -235,11 +232,11 @@ public class A1Q2
     //this should return something
     return solution;
   }
-
+  
   public static boolean checkLists(ArrayList<Maze> list, Maze current)
   {
     boolean result = false;
-
+    
     for (int i= 0; i< list.size(); i++)
     {
       //can just compare the cost and hero location to get uniqueness?
@@ -255,7 +252,7 @@ public class A1Q2
     }
     return result;
   }
-
+  
   //Adds the heuristic value to the current cost to reach that state to determine cost
   public static int findLowestCost(ArrayList<Maze> list, Loc goal)
   {
@@ -263,19 +260,19 @@ public class A1Q2
     double currLowest;
     double bestLowest = 9999;
     int bestLocation = 0;
-
+    
     //System.out.println("findLowestCost list size: "+list.size());
     for (int i = 0; i< list.size(); i++)
     {
       currLowest = list.get(i).getCost() + list.get(i).heuristicValue(goal); //goal being the flag location
       //System.out.println("Curr lowest: "+currLowest);
-
+      
       if (currLowest < bestLowest)
       {
         bestLocation = i;
       }
     }
-
+    
     return bestLocation;
   } 
   
@@ -390,51 +387,51 @@ class Maze // implements Comparator<Integer>
     mazeClone.setCost(this.cost);
     return mazeClone;
   }
-
+  
   public void setCost(int cost) {this.cost = cost;}
-
+  
   public Loc getFlag(int position)
   {
     return flags.get(position);
   }
-
+  
   public int flagsLeft()
   {
     return flags.size();
   }
-
+  
   public void deleteFlag(int arrayLoc)
   {
     flags.remove(arrayLoc);
   }
-
+  
 //finds the euclidean distance from the flag to the hero
   public double heuristicValue(Loc goal)
   {
     return heroLoc.euclideanDistance(goal);
   }
-
+  
   public int getCost() {return cost;}
   
-   //takes the hero location and goes through all of the flags to find the location of the closest flag!
-    public int getClosestFlagLoc()
+  //takes the hero location and goes through all of the flags to find the location of the closest flag!
+  public int getClosestFlagLoc()
+  {
+    //Loc result = null;
+    int result = 0;
+    double closestDist = 99999;
+    double currDist;
+    for (int i = 0; i< flags.size(); i++)
     {
-      //Loc result = null;
-      int result = 0;
-      double closestDist = 99999;
-      double currDist;
-      for (int i = 0; i< flags.size(); i++)
+      currDist = heroLoc.euclideanDistance(flags.get(i));
+      if (currDist < closestDist)
       {
-        currDist = heroLoc.euclideanDistance(flags.get(i));
-        if (currDist < closestDist)
-        {
-          closestDist = currDist;
-          result = i;
+        closestDist = currDist;
+        result = i;
 //result = flags.get(i);  //assign location to closest flag as return value
-        }
       }
-      return result;
     }
+    return result;
+  }
   
   public void addChild(Maze child)
   {
@@ -518,8 +515,8 @@ class Maze // implements Comparator<Integer>
         }
         else 
         {
-        //System.out.println("Moving up");
-        maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
+          //System.out.println("Moving up");
+          maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
         }
         heroLoc.setY(heroLoc.getY()-1);
         valid = true;
@@ -535,7 +532,7 @@ class Maze // implements Comparator<Integer>
         }
         else 
         {
-        maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
+          maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
         }
         heroLoc.setX(heroLoc.getX()+1);
         valid = true;
@@ -550,7 +547,7 @@ class Maze // implements Comparator<Integer>
         }
         else
         {
-        maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
+          maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
         }
         heroLoc.setY(heroLoc.getY()+1);
         valid = true;
@@ -565,14 +562,14 @@ class Maze // implements Comparator<Integer>
         }
         else
         {
-        //System.out.println("Moving left");
-        maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
+          //System.out.println("Moving left");
+          maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
         }
         heroLoc.setX(heroLoc.getX()-1);
         valid = true;
       }
     }
-
+    
     if (valid == true)  //only increase the current cost to reach this state when a move is valid
     {
       cost++;
@@ -603,6 +600,22 @@ class Maze // implements Comparator<Integer>
         }
       }
     }
+  }
+  
+  public int countMoves()
+  {
+    int moves = 0;
+    for (int y = 0; y < height; y++)
+    {
+      for(int x = 0; x< width; x++)
+      {
+        if (maze[y][x] > 0)
+        {
+          moves++;
+        }
+      }
+    }
+    return moves;
   }
   
   
@@ -659,26 +672,26 @@ class Maze // implements Comparator<Integer>
 }
 
 /*
-class FlagDistanceComparator implements Comparator<Loc>
-{
-  //Compares two maps for distance to the flag
-  @Override
-  public int compare(Loc one, Loc two)
-  {
-    //double distOne = one.euclideanDistance()
-    
-    if (one > two)
-    {
-      return -1;
-    }
-    else if (two > one)
-    {
-      return 1;
-    }
-    return 0; //when even
-  }
-}
-*/
+ class FlagDistanceComparator implements Comparator<Loc>
+ {
+ //Compares two maps for distance to the flag
+ @Override
+ public int compare(Loc one, Loc two)
+ {
+ //double distOne = one.euclideanDistance()
+ 
+ if (one > two)
+ {
+ return -1;
+ }
+ else if (two > one)
+ {
+ return 1;
+ }
+ return 0; //when even
+ }
+ }
+ */
 class Node 
 {
   private Maze data;

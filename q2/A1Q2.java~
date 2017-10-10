@@ -3,6 +3,9 @@ import java.util.*;
 
 public class A1Q2
 {
+  private static int actualMoves = 0;
+    private static int totalMovesConsidered = 0;
+  
   public static void main(String[] args) 
   {
     try
@@ -51,6 +54,8 @@ public class A1Q2
       Maze result = AStarHelper(maze);
       System.out.println("------- Solution: -------");
       result.print();
+      int cost = result.getCost();
+      System.out.println("Total moves in solution: "+actualMoves+"\nTotal moves considered: "+cost);
 
     }
     
@@ -86,7 +91,7 @@ public class A1Q2
     children = maze.generateChildren();
     System.out.println("Children in test: "+children);
     System.out.println(children.get(0).toString());
-        System.out.println(children.get(0).toString());
+    System.out.println(children.get(0).toString());
     testB = checkLists(children, maze);
     System.out.println("testCheckList result: "+testB);
   }
@@ -172,21 +177,26 @@ public class A1Q2
     
     //add starting state to the "prioQ"
     open.add(startState);
-
+    int moves = 0;
+    
     while (open.size() != 0)
     {
       currentLoc = findLowestCost(open, goal);  //get the best/lowest cost in open list
       current = open.get(currentLoc);   //get the lowest costing state (priority queue hack)
       open.remove(currentLoc); //remove (deque) from open
       
+      //actualMoves++; //counts the actual moves that are required to get to the goal (running total)
       if (current.getHeroLoc().compare(goal) == true)
       {
+        //System.out.println("Total moves: "+moves);
         return current;
       }
       
       //generate child states, check if not in closed or open
       children = current.generateChildren();
-      //System.out.println("Children size: "+children.size());
+      
+      totalMovesConsidered+=children.size();
+
       for (int i = 0; i< children.size(); i++)
       {
         //System.out.println("\n\n\n**********************CHILDREN:");
@@ -236,7 +246,7 @@ public class A1Q2
       int listCost = list.get(i).getCost();
       int currentCost = current.getCost();
       boolean sameLoc = list.get(i).getHeroLoc().compare(current.getHeroLoc());
-      System.out.println("List: "+listCost+"  Current cost: "+currentCost+"\nSameloc? "+sameLoc);
+      //System.out.println("List: "+listCost+"  Current cost: "+currentCost+"\nSameloc? "+sameLoc);
       
       if ( listCost == currentCost && sameLoc == true )
       {
@@ -502,8 +512,15 @@ class Maze // implements Comparator<Integer>
     if (direction == 0) { //up direction
       if ( (maze[heroLoc.getY()-1][heroLoc.getX()] ) != Tile.WALL.getValue() )
       {
+        if ( maze[heroLoc.getY()][heroLoc.getX()] == Tile.FLAG.getValue())
+        {
+          maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +3; //only add two when encountering the flag for the first time
+        }
+        else 
+        {
         //System.out.println("Moving up");
         maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
+        }
         heroLoc.setY(heroLoc.getY()-1);
         valid = true;
       }
@@ -512,7 +529,14 @@ class Maze // implements Comparator<Integer>
       if ( (maze[heroLoc.getY()][heroLoc.getX()+1] ) != Tile.WALL.getValue() )
       {
         //System.out.println("Moving right");
+        if ( maze[heroLoc.getY()][heroLoc.getX()] == Tile.FLAG.getValue())
+        {
+          maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +3; //only add two when encountering the flag for the first time
+        }
+        else 
+        {
         maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
+        }
         heroLoc.setX(heroLoc.getX()+1);
         valid = true;
       }
@@ -520,8 +544,14 @@ class Maze // implements Comparator<Integer>
     else if (direction == 2) { //down direction
       if ( (maze[heroLoc.getY()+1][heroLoc.getX()] ) != Tile.WALL.getValue() )
       {
-        //System.out.println("Moving down");
+        if ( maze[heroLoc.getY()][heroLoc.getX()] == Tile.FLAG.getValue())
+        {
+          maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +3; //only add two when encountering the flag for the first time
+        }
+        else
+        {
         maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
+        }
         heroLoc.setY(heroLoc.getY()+1);
         valid = true;
       }
@@ -529,8 +559,15 @@ class Maze // implements Comparator<Integer>
     else if (direction == 3) { //left direction
       if ( (maze[heroLoc.getY()][heroLoc.getX()-1] ) != Tile.WALL.getValue() )
       {
+        if ( maze[heroLoc.getY()][heroLoc.getX()] == Tile.FLAG.getValue())
+        {
+          maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +3; //only add two when encountering the flag for the first time
+        }
+        else
+        {
         //System.out.println("Moving left");
         maze[heroLoc.getY()][heroLoc.getX()] = maze[heroLoc.getY()][heroLoc.getX()] +1;
+        }
         heroLoc.setX(heroLoc.getX()-1);
         valid = true;
       }
@@ -557,6 +594,7 @@ class Maze // implements Comparator<Integer>
         {
           newItem = new Loc(x, y);
           flags.add(newItem);
+          //maze[y][x] = Tile.OPEN.value; //changes the flag tile back to 0 since its been added to the flag arraylist
         }
         else if (maze[y][x] == Tile.HERO.value)
         {
