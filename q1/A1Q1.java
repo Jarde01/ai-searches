@@ -1,8 +1,26 @@
-import java.util.PriorityQueue;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.ArrayDeque;
+/**
+ * A1Q2.java
+ *
+ * COMP 3190 SECTION [A01]
+ * INSTRUCTOR: John Braico
+ * NAME: Jeremy Arde
+ * ASSIGNMENT: Assignment 1
+ * QUESTION: Q2
+ *
+ * PURPOSE: Reads in a maze from stdin, and determines the best path 
+ * to collecting flags from a specific starting location.
+ */
+
+import java.util.*;
+import java.io.*;
+
+/*
+   * METHOD: fillRegions: given a stack with one coordinate of an empty space, will fill the space with chars
+   * INPUT: char[][] array, a stack with a coordinate and the character integer to fill with
+   * OUTPUT: 2D grid of characters with regions filled in with different characters
+   * PARAM: the grid to operate on, the stack with the coordinate of an empty element and the char to use for filling the empty region
+   * RETURN: void
+   */
 
 public class A1Q1
 {
