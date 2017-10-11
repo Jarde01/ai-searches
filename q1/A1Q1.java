@@ -59,20 +59,22 @@ public class A1Q1
     testPeople.add(7);
     testPeople.add(3);
     testPeople.add(8);
-    testPeople.add(2);
+    testPeople.add(5);
     //testPeople.add(6);
     
-    int testTime = 120;
+    int testTime = 60;
     
-    //HeuristicSearch heurSoln = new HeuristicSearch(testPeople, testTime);
-    //BreadthFirstSearch bfsSoln = new BreadthFirstSearch(testPeople, testTime);
-    //DepthFirstSearch dfsSoln = new DepthFirstSearch(testPeople, testTime);
+    HeuristicSearch heurSoln = new HeuristicSearch(testPeople, testTime);
+    BreadthFirstSearch bfsSoln = new BreadthFirstSearch(testPeople, testTime);
+    DepthFirstSearch dfsSoln = new DepthFirstSearch(testPeople, testTime);
     iterativeDeepening(testPeople, testTime);
     
   }
   
   public static void iterativeDeepening(ArrayList<Integer> people, int maxTime)
   {
+    Solution solution = new Solution();
+    int operations = 0;
     int depthMax = 7;
     int kDepth = 1;    //increase by one until solution is found or up to 7 levels deep
     int currDepth = 0;
@@ -87,7 +89,7 @@ public class A1Q1
     queue = new ArrayDeque<Node>();           //queue containing all nodes 
     Node root;
     
-    System.out.println("-------------------------------\nStarting Iterative Deepening Search...");
+    System.out.println("\n-------------------------------\nStarting Iterative Deepening Search...");
     
     root = new Node( new State(people) );
     queue.add(root);
@@ -96,8 +98,10 @@ public class A1Q1
     
     ArrayList<Node> visited = new ArrayList<Node>(); //keep track of previously encountered states to prevent cycles
     boolean solved = root.completeCheck();
-    Node solution = null;
+    Node solutionNode = null;
     Node parent = root;
+    Node child = null;
+    int potentialMovesSize = 0;
     
     while (currDepth < kDepth && solved != true)
     {
@@ -109,17 +113,18 @@ public class A1Q1
         visited.add(parent); //put the parent into the visited arraylist
         
         potentialMoves = parent.generateMoves();
-        
+        potentialMovesSize += potentialMoves.size();
         for (int i = 0; i< potentialMoves.size(); i++)
         {
           
-          Node child = parent.clone();
+          child = parent.clone();
+          child.setParent(parent);
           child.movePeople(potentialMoves.get(i));
           child.visit();
           
           if (child.completeCheck()== true)
           {
-            solution = child;
+            solutionNode = child;
             solved = true;
           }
           
@@ -130,27 +135,32 @@ public class A1Q1
           }
         }
         currDepth++;
-      }
-
-      //clear the queue, add the parent again
-      /*
-      queue = null;
-      queue = new ArrayDeque<Node>();
-      queue.add(root);
-      */
-      System.out.println("No solution found with k depth: "+kDepth);
+        operations++;
+      }//end while
+      //System.out.println("No solution at "+maxDepth);
       kDepth++;
-      
-    }
+    }//end while
     
-    if (solution == null)
+    if (solutionNode == null)
     {
-      System.out.println("No solution found...");
+      System.out.println("No solution found with max k of:"+currDepth);
     }
     else
     {
-      System.out.println("---------- Solution: ----------");
-      solution.print();
+      System.out.println("---------- Solution found at depth: "+currDepth+" : ----------");
+      solution.toggleSolved();
+      solution.addState((State)solutionNode.getData());
+              
+      Node childTest = solutionNode.getParent();
+      while (childTest != null)
+      {
+        solution.addState((State)childTest.getData());
+        childTest = childTest.getParent();
+      }
+      solution.reverseStateList();
+      solution.printResults();
+      System.out.println("Current Time: "+((State)solutionNode.getData()).getTime());
+      System.out.println("Attempted moves: "+potentialMovesSize);
     }
   }
   
@@ -292,6 +302,11 @@ class State extends Data
   public Move getLastMove()
   {
     return lastMove;
+  }
+  
+  public String toStringBridge()
+  {
+    return left.toString()+" >== BRIDGE ==< "+right.toString()+"\n";
   }
   
   public void setLastMove(Move lm)
@@ -526,6 +541,7 @@ class Node
   public Node(Data d, Node n)
   {
     data = d;
+    parent = null;
     children = new ArrayList<Node>();
     children.add(n);                  //adding new child
     visited = false;
@@ -542,8 +558,8 @@ class Node
   public boolean completeCheck()
   {
     return ( (State)data).completeCheck();
-    
   }
+  
   
   public Node(Data d, ArrayList<Node> c, boolean v, Node p) //basically only for clone method
   {
@@ -557,6 +573,8 @@ class Node
   {
     this.parent = parent;
   }
+  
+  public Node getParent() {return parent;}
   
   public void printChildren()
   {
@@ -695,6 +713,29 @@ class Solution
     stateList.add(s);
   }
   
+  //recursive method to fill up the stateList for a solved state in correct order (top to t
+  public void fillStateList(Node child)
+  {
+    Node parent = child.getParent();
+    
+    while ( parent != null)
+    {
+      fillStateList( parent);
+    }
+    
+    //End of recursion
+    if (parent != null) //test for starting state (null parent)
+    {
+      stateList.add((State)parent.getData());
+      //do something with movelist?
+    }
+  }
+  
+  public void reverseStateList()
+  {
+    Collections.reverse(stateList);
+  }
+  
   public void addMove(Move m)
   {
     moveList.add(m);
@@ -705,7 +746,7 @@ class Solution
     String result = "";
     for (int i = 0; i< stateList.size(); i++)
     {
-      result +=stateList.get(i).toString();
+      result +=stateList.get(i).toStringBridge();
     }
     return result;
   }
@@ -736,7 +777,7 @@ class Solution
     
     if (isComplete() == true)
     {
-      results += "Search was successful!\nHere are your results:\n";
+      results += "Search was successful! Here are your results:\n";
     }
     else 
     {
@@ -744,7 +785,7 @@ class Solution
     }
     
     System.out.println(results + this.StatesToString());
-    System.out.println("\nHere is how we got here: (NOTE: Numbers are referencing positions)\n"+ this.MovesToString()); 
+    //System.out.println("\nHere is how we got here: (NOTE: Numbers are referencing positions)\n"+ this.MovesToString()); 
   }
 }
 
@@ -756,7 +797,7 @@ class HeuristicSearch
   {
     solution = new Solution();
     beginHeurSearch(people, maxTime); 
-    solution.printResults();
+    //solution.printResults();
   }
   
   //heuristic search always chooses to move the fastest person with anyone else to the 
@@ -768,10 +809,10 @@ class HeuristicSearch
     State newState;
     Move bestMove;                            //the move we will use to generate the next state
     boolean complete = false;                 //flag telling while loop when solution is found
-    
+    int potentialMovesSize = 0;
     State initialState = new State(people);   //create the initial starting state
     State currentState = initialState;        //keeping track of the current state in the while loop
-    
+    int bestTime = 0;
     System.out.println("-----------------\nStarting Heuristic Search...");
     solution.addState(initialState);
     
@@ -782,8 +823,7 @@ class HeuristicSearch
     {
       //Create possible moves to the right
       potentialMoves = currentState.generateMoves();
-      //System.out.println("Possible moves RIGHT: "+potentialMovesRight.toString());
-      
+      potentialMovesSize += potentialMoves.size();
       bestMove = heuristicFunction(currentState, potentialMoves);
       
       if (bestMove != null)
@@ -805,6 +845,7 @@ class HeuristicSearch
       if ( complete != true)
       {
         potentialMoves = currentState.generateMoves();
+        potentialMovesSize += potentialMoves.size();
         //System.out.println("Possible moves LEFT: "+potentialMovesLeft.toString());
         
         bestMove = heuristicFunction(currentState, potentialMoves);
@@ -832,7 +873,13 @@ class HeuristicSearch
     if (currentState.getTime() < maxTime)
     {
       solution.toggleSolved();  //mark the solution as solved
+      bestTime = currentState.getTime();
     }
+    
+    solution.printResults();
+    System.out.println("Current Time: "+bestTime);
+    System.out.println("Attempted moves: "+potentialMovesSize);
+    
   }
   
   private Move heuristicFunction(State state, ArrayList<Move> move)
@@ -909,7 +956,7 @@ class BreadthFirstSearch
     queue = new ArrayDeque<Node>();           //queue containing all nodes 
     Node root;
     
-    System.out.println("-------------------------------\nStarting Breadth First Search...");
+    System.out.println("\n-------------------------------\nStarting Breadth First Search...");
     
     root = new Node( new State(people) );
     queue.add(root);
@@ -918,27 +965,28 @@ class BreadthFirstSearch
     
     ArrayList<Node> visited = new ArrayList<Node>(); //keep track of previously encountered states to prevent cycles
     boolean solved = root.completeCheck();
-    Node solution = null;
+    Node solutionNode = null;
     Node parent = root;
+    int potentialMovesSize = 0;
     
     while (queue.size() != 0 && solved != true && ((State) parent.getData()).getTime() < maxTime)
     {
       parent = queue.remove(); //gets the first value on the queue
-      //parent.print();
       visited.add(parent); //put the parent into the visited arraylist
       
       potentialMoves = parent.generateMoves();
-      
+      potentialMovesSize += potentialMoves.size();
       for (int i = 0; i< potentialMoves.size(); i++)
       {
         
         Node child = parent.clone();
+        child.setParent(parent); ///so we can iterate back through the solved state to get old states
         child.movePeople(potentialMoves.get(i));
         child.visit();
         
         if (child.completeCheck()== true)
         {
-          solution = child;
+          solutionNode = child;
           solved = true;
         }
         
@@ -950,14 +998,26 @@ class BreadthFirstSearch
       }
     }
     
-    if (solution == null)
+    if (solutionNode == null)
     {
       System.out.println("No solution found...");
     }
     else
     {
       System.out.println("---------- Solution: ----------");
-      solution.print();
+      solution.toggleSolved();
+      solution.addState((State)solutionNode.getData());
+              
+      Node childTest = solutionNode.getParent();
+      while (childTest != null)
+      {
+        solution.addState((State)childTest.getData());
+        childTest = childTest.getParent();
+      }
+      solution.reverseStateList();
+      solution.printResults();
+      System.out.println("Current Time: "+((State)solutionNode.getData()).getTime());
+      System.out.println("Attempted moves: "+potentialMovesSize);
     }
   }
 }
@@ -986,7 +1046,7 @@ class DepthFirstSearch
     stack = new ArrayDeque<Node>();           //queue containing all nodes 
     Node root;
     
-    System.out.println("-------------------------------\nStarting Depth First Search...");
+    System.out.println("\n-------------------------------\nStarting Depth First Search...");
     
     root = new Node( new State(people) );
     stack.add(root);
@@ -995,9 +1055,9 @@ class DepthFirstSearch
     
     ArrayList<Node> visited = new ArrayList<Node>(); //keep track of previously encountered states to prevent cycles
     boolean solved = root.completeCheck();
-    Node solution = null;
+    Node solutionNode = null;
     Node parent = root;
-    
+    int potentialMovesSize = 0;
     
     
     while (stack.size() != 0 && solved != true && ((State) parent.getData()).getTime() < maxTime)
@@ -1007,17 +1067,18 @@ class DepthFirstSearch
       visited.add(parent); //put the parent into the visited arraylist
       
       potentialMoves = parent.generateMoves();
-      
+      potentialMovesSize += potentialMoves.size();
       for (int i = 0; i< potentialMoves.size(); i++)
       {
         
         Node child = parent.clone();
+        child.setParent(parent); //for finding past states
         child.movePeople(potentialMoves.get(i));
         child.visit();
         
         if (child.completeCheck()== true)
         {
-          solution = child;
+          solutionNode = child;
           solved = true;
         }
         
@@ -1037,7 +1098,19 @@ class DepthFirstSearch
     else
     {
       System.out.println("---------- Solution: ----------");
-      solution.print();
+      solution.toggleSolved();
+      solution.addState((State)solutionNode.getData());
+              
+      Node childTest = solutionNode.getParent();
+      while (childTest != null)
+      {
+        solution.addState((State)childTest.getData());
+        childTest = childTest.getParent();
+      }
+      solution.reverseStateList();
+      solution.printResults();
+      System.out.println("Current Time: "+((State)solutionNode.getData()).getTime());
+      System.out.println("Attempted moves: "+potentialMovesSize);
     }
   }
 }
